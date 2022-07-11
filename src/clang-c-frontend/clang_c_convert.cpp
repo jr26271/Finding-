@@ -1581,7 +1581,9 @@ bool clang_c_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
     else
     {
       assert(cl.static_lifetime);
-      new_expr.swap(initializer);
+      if(t.is_vector())
+        // Global vectors are compound operands that need to be early initialized
+        new_expr.swap(initializer);
       /* Symbols appearing in file scope do not need a declaration.
        * clang_c_main::static_lifetime_init() takes care of the initialization.
        */
