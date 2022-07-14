@@ -29,7 +29,6 @@ Authors: Daniel Kroening, kroening@kroening.com
 #include <goto-symex/goto_trace.h>
 #include <goto-symex/reachability_tree.h>
 #include <goto-symex/slice.h>
-#include <goto-symex/xml_goto_trace.h>
 #include <langapi/language_util.h>
 #include <langapi/languages.h>
 #include <langapi/mode.h>
