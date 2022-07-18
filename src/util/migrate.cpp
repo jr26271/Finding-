@@ -113,12 +113,6 @@ type2tc migrate_type(const typet &type)
     type2tc subtype = migrate_type(type.subtype());
     expr2tc size((expr2t *)nullptr);
 
-    assert(
-      type.find((typet::a_size).id() != "infinity") &&
-      "Vector type has a constant size\n"
-      "Please, refer to: "
-      "https://clang.llvm.org/docs/"
-      "LanguageExtensions.html#vectors-and-extended-vectors");
     exprt sz = (exprt &)type.find(typet::a_size);
     simplify(sz);
     migrate_expr(sz, size);
