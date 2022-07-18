@@ -512,7 +512,7 @@ public:
       assert(is_bv_type(t));
       assert(t->get_width() == config.ansi_c.pointer_width);
     }
-    else
+    else if(!(is_vector_type(v1->type) || is_vector_type(v2->type)))
     {
       assert(
         p2 || (is_bv_type(t) == is_bv_type(v1->type) &&
@@ -521,6 +521,7 @@ public:
         p1 || (is_bv_type(t) == is_bv_type(v2->type) &&
                t->get_width() == v2->type->get_width()));
     }
+    // TODO: Add consistency checks for vectors
 #endif
   }
   arith_2ops(const arith_2ops &ref) = default;
@@ -1472,6 +1473,7 @@ irep_typedefs(constant_floatbv, constant_floatbv_data);
 irep_typedefs(constant_struct, constant_datatype_data);
 irep_typedefs(constant_union, constant_union_data);
 irep_typedefs(constant_array, constant_datatype_data);
+irep_typedefs(constant_vector, constant_datatype_data);
 irep_typedefs(constant_bool, constant_bool_data);
 irep_typedefs(constant_array_of, constant_array_of_data);
 irep_typedefs(constant_string, constant_string_data);
@@ -1757,6 +1759,28 @@ public:
   constant_array2t(const constant_array2t &ref) = default;
 
   expr2tc do_simplify() const override;
+
+  static std::string field_names[esbmct::num_type_fields];
+};
+
+/** Constant array.
+ *  Contains a vector of array elements, pretty self explanatory. Only valid if
+ *  its type has a constant sized array, can't have constant arrays of dynamic
+ *  or infinitely sized arrays.
+ *  @extends constant_datatype_data
+ */
+class constant_vector2t : public constant_vector_expr_methods
+{
+public:
+  /** Primary constructor.
+   *  @param type Type of this array, must be a constant sized array
+   *  @param membrs Vector of elements in this array
+   */
+  constant_vector2t(const type2tc &type, const std::vector<expr2tc> &members)
+    : constant_vector_expr_methods(type, constant_vector_id, members)
+  {
+  }
+  constant_vector2t(const constant_vector2t &ref) = default;
 
   static std::string field_names[esbmct::num_type_fields];
 };
@@ -2871,7 +2895,9 @@ public:
   index2t(const type2tc &type, const expr2tc &source, const expr2tc &index)
     : index_expr_methods(type, index_id, source, index)
   {
-    assert(is_array_type(source) || is_string_type(source));
+    assert(
+      is_array_type(source) || is_string_type(source) ||
+      is_vector_type(source));
   }
   index2t(const index2t &ref) = default;
 
