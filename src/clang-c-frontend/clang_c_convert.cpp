@@ -347,6 +347,11 @@ bool clang_c_convertert::get_struct_union_class(
     s = move_symbol_to_context(symbol);
   }
 
+  for_decl_annot(rd, [s](const std::string &annot) {
+    if(annot == "__ESBMC_ODR-override")
+      s->odr_override = true;
+  });
+
   /* Get the symbol's type to continue the conversion - unless it's already
    * complete or a complete one is not requested (i.e., a symbolic type will
    * suffice, thereby avoiding infinite recursion) */
