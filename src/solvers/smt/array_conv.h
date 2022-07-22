@@ -38,7 +38,11 @@ class array_convt;
 class array_ast : public smt_ast
 {
 public:
-#define array_downcast(x) static_cast<const array_ast *>(x)
+#ifdef NDEBUG
+# define array_downcast(x) static_cast<const array_ast *>(x)
+#else
+# define array_downcast(x) dynamic_cast<const array_ast *>(x)
+#endif
 
   array_ast(array_convt *actx, smt_convt *ctx, const smt_sort *_s)
     : smt_ast(ctx, _s), symname(""), array_ctx(actx)
