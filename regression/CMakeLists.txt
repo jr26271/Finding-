@@ -64,7 +64,10 @@ if(APPLE)
     set(REGRESSIONS esbmc-unix esbmc-unix2 esbmc ${REGRESSIONS_SOLIDITY}
                     cbmc cstd llvm floats floats-regression ${REGRESSIONS_JIMPLE}
                     k-induction k-induction-parallel nonz3 ${REGRESSIONS_BITWUZLA}
-                    incremental-smt esbmc-cpp11/cpp esbmc-cpp11/cbmc-constructors  extensions)
+                    incremental-smt esbmc-cpp11/cpp esbmc-cpp11/cbmc-constructors
+                    svcomp
+                    extensions
+       )
 elseif(WIN32)
     # FUTURE: Add floats-regression esbmc-cpp/cpp
     set(REGRESSIONS esbmc cbmc cstd llvm floats k-induction ${REGRESSIONS_JIMPLE})
@@ -75,8 +78,12 @@ else()
                     cbmc cstd llvm floats floats-regression
                     k-induction esbmc-cpp/cpp esbmc-cpp/cbmc csmith
                     k-induction-parallel nonz3 ${REGRESSIONS_BITWUZLA}
-                    incremental-smt esbmc-cpp11/cpp esbmc-cpp11/constructors esbmc-cpp11/new-delete esbmc-cpp11/reference
-                    ${REGRESSIONS_GOTO_CONTRACTOR} ${REGRESSIONS_JIMPLE} extensions)
+                    incremental-smt esbmc-cpp11/cpp esbmc-cpp11/constructors
+                    esbmc-cpp11/new-delete esbmc-cpp11/reference
+                    ${REGRESSIONS_GOTO_CONTRACTOR} ${REGRESSIONS_JIMPLE}
+                    svcomp
+                    extensions
+       )
   else()
     set(REGRESSIONS $ENV{BENCHMARK_TO_RUN}) # run a single user-specified benchmark
     # create a directory at config time. Test logs will be saved in this directory.
