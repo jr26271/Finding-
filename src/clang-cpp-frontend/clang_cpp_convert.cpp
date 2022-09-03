@@ -575,7 +575,7 @@ bool clang_cpp_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
     if(de.getDestroyedType()->getAsCXXRecordDecl())
     {
       typet destt;
-      if(get_type(de.getDestroyedType(), destt))
+      if(get_type(de.getDestroyedType(), destt, true))
         return true;
       new_expr.type() = destt;
     }
