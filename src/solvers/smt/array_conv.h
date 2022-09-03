@@ -38,12 +38,6 @@ class array_convt;
 class array_ast : public smt_ast
 {
 public:
-#ifdef NDEBUG
-# define array_downcast(x) static_cast<const array_ast *>(x)
-#else
-# define array_downcast(x) dynamic_cast<const array_ast *>(x)
-#endif
-
   array_ast(array_convt *actx, smt_convt *ctx, const smt_sort *_s)
     : smt_ast(ctx, _s), symname(""), array_ctx(actx)
   {
@@ -90,6 +84,18 @@ public:
 
   array_convt *array_ctx;
 };
+
+#ifdef NDEBUG
+# define array_downcast(x) static_cast<const array_ast *>(x)
+#else
+// # define array_downcast(x) dynamic_cast<const array_ast *>(x)
+static inline const array_ast *array_downcast(const smt_astt x)
+{
+  const array_ast *a = dynamic_cast<const array_ast *>(x);
+  assert(!a == !x);
+  return a;
+}
+#endif
 
 class array_convt : public array_iface
 {
