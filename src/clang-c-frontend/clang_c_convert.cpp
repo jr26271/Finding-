@@ -255,7 +255,7 @@ bool clang_c_convertert::get_decl(const clang::Decl &decl, exprt &new_expr)
 
       while(!tu_symtype_decls.empty())
       {
-        auto [id,decl] = tu_symtype_decls.back();
+        auto [id, decl] = tu_symtype_decls.back();
         tu_symtype_decls.pop_back();
         if(resolve_symtype_decl(id, decl))
           return true;
@@ -313,7 +313,8 @@ bool clang_c_convertert::resolve_symtype_decl(
   switch(decl->getKind())
   {
   case clang::Decl::Record:
-    if(get_struct_union_class(*static_cast<const clang::RecordDecl *>(decl), true))
+    if(get_struct_union_class(
+         *static_cast<const clang::RecordDecl *>(decl), true))
       return true;
 
     break;
@@ -348,7 +349,11 @@ bool clang_c_convertert::get_struct_union_class(
   std::string id, name;
   get_decl_name(rd, name, id);
 
-  fprintf(stdout, "C: getting %s id '%s'\n", complete ? "complete" : "incomplete", id.c_str());
+  fprintf(
+    stdout,
+    "C: getting %s id '%s'\n",
+    complete ? "complete" : "incomplete",
+    id.c_str());
 
   // Check if the symbol is already added to the context, do nothing if it is
   // already in the context. See next comment
@@ -518,7 +523,7 @@ bool clang_c_convertert::get_var(const clang::VarDecl &vd, exprt &new_expr)
 
   // Check if we annotated it to be have an infinity size
   bool no_slice = false;
-  for_decl_annot(vd, [&t,&no_slice](const std::string &annot) {
+  for_decl_annot(vd, [&t, &no_slice](const std::string &annot) {
     if(annot == "__ESBMC_inf_size")
     {
       assert(t.is_array());
@@ -1066,7 +1071,7 @@ bool clang_c_convertert::get_type(
 
     if(get_struct_union_class(rd, complete))
       return true;
-    // complete = false;
+      // complete = false;
 #endif
     if(complete)
       new_type = context.find_symbol(id)->type;
