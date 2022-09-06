@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module:
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #ifndef CPROVER_STD_EXPR_H
 #define CPROVER_STD_EXPR_H
 
@@ -384,6 +376,13 @@ public:
 
 const index_exprt &to_index_expr(const exprt &expr);
 index_exprt &to_index_expr(exprt &expr);
+
+inline const unary_exprt &to_unary_expr(const exprt &expr)
+{
+  const unary_exprt &ret = static_cast<const unary_exprt &>(expr);
+  assert(ret.operands().size() == 1);
+  return ret;
+}
 
 class array_of_exprt : public exprt
 {

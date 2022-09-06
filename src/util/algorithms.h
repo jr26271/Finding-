@@ -1,27 +1,14 @@
-/*******************************************************************\
- Module: Algorithm Interface
- Author: Rafael Sá Menezes
- Date: May 2021
-
- Description: The algorithm interface is to be used for
-              every kind of logic that uses a generic datastructure
-              to be reasoned: containers, CFG, goto-programs, loops.
-
-              The idea is that we don't need to look over a million
-              of lines in the flow of esbmc when we only want to do 
-              a small analysis.
-\*******************************************************************/
-
 #ifndef ESBMC_ALGORITHM_H
 #define ESBMC_ALGORITHM_H
 
 #include <goto-programs/goto_functions.h>
 #include <goto-programs/loopst.h>
 #include <goto-programs/goto_loops.h>
-#include <util/message/message.h>
+#include <util/message.h>
 /**
  * @brief Base interface to run an algorithm in esbmc
  */
+template <typename T>
 class algorithm
 {
 public:
@@ -30,16 +17,16 @@ public:
   }
 
   /**
-   * @brief Executes the algorithm
-   * 
+   * @brief Executes the algorithm over a T object
+   *
    * @return success of the algorithm
    */
-  virtual bool run() = 0;
+  virtual bool run(T &) = 0;
 
   /**
    * @brief Says wether the algorithm is a plain analysis
    * or if it also changes the structure
-   * 
+   *
    */
   bool has_sideeffect()
   {
@@ -54,13 +41,10 @@ protected:
 /**
  * @brief Base interface for goto-functions algorithms
  */
-class goto_functions_algorithm : public algorithm
+class goto_functions_algorithm : public algorithm<goto_functionst>
 {
 public:
-  explicit goto_functions_algorithm(
-    goto_functionst &goto_functions,
-    bool sideffect)
-    : algorithm(sideffect), goto_functions(goto_functions)
+  explicit goto_functions_algorithm(bool sideffect) : algorithm(sideffect)
   {
   }
 
@@ -73,13 +57,11 @@ public:
     return number_of_loops;
   }
 
-  bool run() override;
+  bool run(goto_functionst &) override;
 
 protected:
   virtual bool runOnFunction(std::pair<const dstring, goto_functiont> &F);
   virtual bool runOnLoop(loopst &loop, goto_programt &goto_program);
-  goto_functionst &goto_functions;
-  ;
 
 private:
   unsigned number_of_functions = 0;

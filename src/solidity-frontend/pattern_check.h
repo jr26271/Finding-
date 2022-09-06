@@ -20,8 +20,7 @@ class pattern_checker
 public:
   pattern_checker(
     const nlohmann::json &_ast_nodes,
-    const std::string &_target_func,
-    const messaget &msg);
+    const std::string &_target_func);
   virtual ~pattern_checker() = default;
 
   bool do_pattern_check();
@@ -36,7 +35,6 @@ public:
 protected:
   const nlohmann::json &ast_nodes;
   const std::string target_func; // function to be verified
-  const messaget &msg;
 };
 
 #endif /* SOLIDITY_FRONTEND_PATTERN_CHECK_H_ */

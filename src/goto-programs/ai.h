@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Abstract Interpretation
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 /// \file
 /// Abstract Interpretation
 
@@ -81,10 +73,8 @@ public:
   {
   }
 
-  virtual void output(
-    const goto_functionst &goto_functions,
-    std::ostream &out,
-    const messaget &msg) const;
+  virtual void
+  output(const goto_functionst &goto_functions, std::ostream &out) const;
 
 protected:
   // overload to add a factory

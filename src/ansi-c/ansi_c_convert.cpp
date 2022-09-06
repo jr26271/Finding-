@@ -11,6 +11,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <ansi-c/ansi_c_declaration.h>
 #include <util/config.h>
 #include <util/std_types.h>
+#include <util/message.h>
 
 void ansi_c_convertt::convert(ansi_c_parse_treet &ansi_c_parse_tree)
 {
@@ -211,7 +212,7 @@ void ansi_c_convertt::convert_type(typet &type)
 
 void ansi_c_convertt::convert_type(typet &type, c_storage_spect &c_storage_spec)
 {
-  ansi_c_convert_typet ansi_c_convert_type(get_message_handler());
+  ansi_c_convert_typet ansi_c_convert_type;
 
   ansi_c_convert_type.read(type);
   ansi_c_convert_type.write(type);
@@ -366,10 +367,9 @@ void ansi_c_convertt::convert_type(typet &type, c_storage_spect &c_storage_spec)
 
 bool ansi_c_convert(
   ansi_c_parse_treet &ansi_c_parse_tree,
-  const std::string &module,
-  const messaget &message_handler)
+  const std::string &module)
 {
-  ansi_c_convertt ansi_c_convert(module, message_handler);
+  ansi_c_convertt ansi_c_convert(module);
 
   try
   {
@@ -378,28 +378,27 @@ bool ansi_c_convert(
 
   catch(int e)
   {
-    ansi_c_convert.error();
+    abort();
   }
 
   catch(const char *e)
   {
-    ansi_c_convert.error(e);
+    log_error(e);
+    abort();
   }
 
   catch(const std::string &e)
   {
-    ansi_c_convert.error(e);
+    log_error(e);
+    abort();
   }
 
-  return ansi_c_convert.get_error_found();
+  return false;
 }
 
-bool ansi_c_convert(
-  exprt &expr,
-  const std::string &module,
-  const messaget &message_handler)
+bool ansi_c_convert(exprt &expr, const std::string &module)
 {
-  ansi_c_convertt ansi_c_convert(module, message_handler);
+  ansi_c_convertt ansi_c_convert(module);
 
   try
   {
@@ -408,18 +407,20 @@ bool ansi_c_convert(
 
   catch(int e)
   {
-    ansi_c_convert.error();
+    abort();
   }
 
   catch(const char *e)
   {
-    ansi_c_convert.error(e);
+    log_error(e);
+    abort();
   }
 
   catch(const std::string &e)
   {
-    ansi_c_convert.error(e);
+    log_error(e);
+    abort();
   }
 
-  return ansi_c_convert.get_error_found();
+  return false;
 }

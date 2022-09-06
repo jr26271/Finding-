@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Symbolic Execution
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #ifndef CPROVER_GOTO_SYMEX_GOTO_SYMEX_H
 #define CPROVER_GOTO_SYMEX_GOTO_SYMEX_H
 
@@ -49,8 +41,7 @@ public:
     contextt &_new_context,
     const goto_functionst &goto_functions,
     std::shared_ptr<symex_targett> _target,
-    optionst &opts,
-    const messaget &msg);
+    optionst &opts);
   goto_symext(const goto_symext &sym);
   goto_symext &operator=(const goto_symext &sym);
 
@@ -451,7 +442,7 @@ protected:
     reachability_treet &art,
     const code_function_call2t &func_call);
   /** Returns the size of the object
-   * 
+   *
    * If the object is invalid, then this function will return 0
    */
   void intrinsic_get_object_size(
@@ -881,8 +872,6 @@ protected:
    *  the dereference code and the caller, who will inspect the contents after
    *  a call to dereference (in INTERNAL mode) completes. */
   std::list<dereference_callbackt::internal_item> internal_deref_items;
-
-  const messaget &msg;
 
   friend void build_goto_symex_classes();
 };

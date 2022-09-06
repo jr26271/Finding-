@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Bounded Model Checking for ANSI-C + HDL
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #ifndef CPROVER_CBMC_BMC_H
 #define CPROVER_CBMC_BMC_H
 
@@ -22,11 +14,7 @@ Author: Daniel Kroening, kroening@kroening.com
 class bmct
 {
 public:
-  bmct(
-    goto_functionst &funcs,
-    optionst &opts,
-    contextt &_context,
-    const messaget &_message_handler);
+  bmct(goto_functionst &funcs, optionst &opts, contextt &_context);
 
   optionst &options;
 
@@ -40,7 +28,7 @@ public:
 protected:
   const contextt &context;
   namespacet ns;
-  const messaget &msg;
+
   std::shared_ptr<smt_convt> runtime_solver;
   std::shared_ptr<reachability_treet> symex;
   virtual smt_convt::resultt run_decision_procedure(

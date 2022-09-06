@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Pointer Dereferencing
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #ifndef CPROVER_POINTER_ANALYSIS_DEREFERENCE_H
 #define CPROVER_POINTER_ANALYSIS_DEREFERENCE_H
 
@@ -183,14 +175,12 @@ public:
     const namespacet &_ns,
     contextt &_new_context,
     const optionst &_options,
-    dereference_callbackt &_dereference_callback,
-    const messaget &msg)
+    dereference_callbackt &_dereference_callback)
     : ns(_ns),
       new_context(_new_context),
       options(_options),
       dereference_callback(_dereference_callback),
-      block_assertions(false),
-      msg(msg)
+      block_assertions(false)
   {
     is_big_endian =
       (config.ansi_c.endianess == configt::ansi_ct::IS_BIG_ENDIAN);
@@ -297,7 +287,6 @@ private:
   std::list<dereference_callbackt::internal_item> internal_items;
   /** Flag for discarding all assertions encoded. */
   bool block_assertions;
-  const messaget &msg;
 
   /** Interpret an expression that modifies the guard. i.e., an 'if' or a
    *  piece of logic that can be short-circuited.

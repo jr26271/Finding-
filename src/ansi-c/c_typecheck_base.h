@@ -18,17 +18,12 @@ Author: Daniel Kroening, kroening@kroening.com
 class c_typecheck_baset : public typecheckt, protected namespacet
 {
 public:
-  c_typecheck_baset(
-    contextt &_context,
-    const std::string &_module,
-    const messaget &_message_handler)
-    : typecheckt(_message_handler),
-      namespacet(_context),
-      context(_context),
-      module(_module),
-      mode("C")
+  c_typecheck_baset(contextt &_context, const std::string &_module)
+    : namespacet(_context), context(_context), module(_module), mode("C")
   {
   }
+
+  std::ostringstream str;
 
   ~c_typecheck_baset() override = default;
 
@@ -48,8 +43,8 @@ protected:
   void replace_symbol(irept &symbol);
 
   // overload to use language specific syntax
-  std::string to_string(const exprt &expr) override;
-  std::string to_string(const typet &type) override;
+  std::string to_string(const exprt &expr);
+  std::string to_string(const typet &type);
 
   //
   // service functions

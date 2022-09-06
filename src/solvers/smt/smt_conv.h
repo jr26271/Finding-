@@ -9,7 +9,7 @@
 #include <solvers/prop/literal.h>
 #include <solvers/prop/pointer_logic.h>
 #include <irep2/irep2_utils.h>
-#include <util/message/message.h>
+#include <util/message.h>
 #include <util/namespace.h>
 #include <util/threeval.h>
 
@@ -142,7 +142,7 @@ public:
   smt_astt
   new_solver_ast(typename the_solver_ast::solver_ast_type ast, smt_sortt sort)
   {
-    return new the_solver_ast(this, ast, sort, msg);
+    return new the_solver_ast(this, ast, sort);
   }
 
   /** Primary constructor. After construction, smt_post_init must be called
@@ -150,10 +150,7 @@ public:
    *
    *  @param _ns Namespace for looking up the type of certain symbols.
    *  @param _options Provide all the needed parameters to configure the solver. */
-  smt_convt(
-    const namespacet &_ns,
-    const optionst &_options,
-    const messaget &msg);
+  smt_convt(const namespacet &_ns, const optionst &_options);
 
   virtual ~smt_convt() = default;
 
@@ -819,7 +816,6 @@ public:
   const namespacet &ns;
   /* Options contain all the parameters set by the user to run ESBMC */
   const optionst &options;
-  const messaget &msg;
 
   bool ptr_foo_inited;
 
@@ -869,8 +865,7 @@ public:
 };
 
 // Define here to enable inlining
-inline smt_ast::smt_ast(smt_convt *ctx, smt_sortt s, const messaget &msg)
-  : sort(s), context(ctx), _msg(msg)
+inline smt_ast::smt_ast(smt_convt *ctx, smt_sortt s) : sort(s), context(ctx)
 {
   assert(sort != nullptr);
   ctx->live_asts.push_back(this);

@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Clang C Language Module
-
-Author:
-
-\*******************************************************************/
-
 #ifndef CLANG_C_FRONTEND_CLANG_C_LANGUAGE_H_
 #define CLANG_C_FRONTEND_CLANG_C_LANGUAGE_H_
 
@@ -23,19 +15,13 @@ class ASTUnit;
 class clang_c_languaget : public languaget
 {
 public:
-  virtual bool preprocess(
-    const std::string &path,
-    std::ostream &outstream,
-    const messaget &msg);
+  virtual bool preprocess(const std::string &path, std::ostream &outstream);
 
-  bool parse(const std::string &path, const messaget &msg) override;
+  bool parse(const std::string &path) override;
 
-  bool final(contextt &context, const messaget &msg) override;
+  bool final(contextt &context) override;
 
-  bool typecheck(
-    contextt &context,
-    const std::string &module,
-    const messaget &msg) override;
+  bool typecheck(contextt &context, const std::string &module) override;
 
   std::string id() const override
   {
@@ -52,14 +38,14 @@ public:
   bool from_type(const typet &type, std::string &code, const namespacet &ns)
     override;
 
-  languaget *new_language(const messaget &msg) const override
+  languaget *new_language() const override
   {
-    return new clang_c_languaget(msg);
+    return new clang_c_languaget();
   }
 
   // constructor, destructor
   ~clang_c_languaget() override = default;
-  explicit clang_c_languaget(const messaget &msg);
+  explicit clang_c_languaget();
 
 protected:
   virtual std::string internal_additions();
@@ -72,6 +58,6 @@ protected:
   std::vector<std::unique_ptr<clang::ASTUnit>> ASTs;
 };
 
-languaget *new_clang_c_language(const messaget &msg);
+languaget *new_clang_c_language();
 
 #endif

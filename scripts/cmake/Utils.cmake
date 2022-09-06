@@ -43,6 +43,7 @@ function(mangle output_c dir)
           PREFIX           # sets flail.py --prefix parameter to the given argument
      )
   cmake_parse_arguments(MANGLE "${kw0}" "${kw1}" "" ${ARGN})
+
   if (MANGLE_WILDCARD)
     set(single_file_desc "${MANGLE_WILDCARD} in ${dir}/")
     file(GLOB inputs RELATIVE ${dir} CONFIGURE_DEPENDS ${dir}/${MANGLE_WILDCARD} ${MANGLE_UNPARSED_ARGUMENTS})
@@ -51,13 +52,16 @@ function(mangle output_c dir)
     list(JOIN ", " inputs single_file_desc)
     set(single_file_desc "${inputs} in ${dir}")
   endif()
+
   set(cmd0 ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/flail.py)
   if (MANGLE_MACRO)
     list(APPEND cmd0 --macro ${MANGLE_MACRO})
   endif()
+
   if (MANGLE_PREFIX)
     list(APPEND cmd0 --prefix ${MANGLE_PREFIX})
   endif()
+
   if (MANGLE_SINGLE)
     set(outputs ${output_c})
     list(TRANSFORM inputs PREPEND ${dir}/ OUTPUT_VARIABLE dep)
@@ -102,4 +106,18 @@ function(mangle output_c dir)
       file(WRITE ${MANGLE_ACC_HEADERS_INTO} "${includes}")
     endif()
   endif()
+endfunction()
+
+function(download_zip_and_extract ID URL)
+  # TODO: might be a good idea to add sha1 checks
+  if(NOT EXISTS ${CMAKE_BINARY_DIR}/${ID}.zip)
+    message(STATUS "Downloading ${ID}")
+    file(DOWNLOAD ${URL} ${CMAKE_BINARY_DIR}/${ID}.zip SHOW_PROGRESS)
+  endif()
+
+  if(NOT EXISTS ${CMAKE_BINARY_DIR}/${ID})
+    message(STATUS "Extracting ${ID}") 
+    file(ARCHIVE_EXTRACT INPUT ${CMAKE_BINARY_DIR}/${ID}.zip DESTINATION ${CMAKE_BINARY_DIR}/${ID})
+  endif()
+
 endfunction()

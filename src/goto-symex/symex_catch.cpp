@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Symbolic Execution
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <goto-symex/goto_symex.h>
 #include <irep2/irep2.h>
 #include <util/migrate.h>
@@ -73,12 +65,12 @@ bool goto_symext::symex_throw()
   last_throw = const_cast<goto_programt::instructiont *>(&instruction);
 
   // Log
-  std::ostringstream oss;
-  oss << "*** Exception thrown of type "
-      << exceptions_thrown.begin()->as_string() << " at file "
-      << instruction.location.file() << " line " << instruction.location.line()
-      << "\n";
-  msg.error(oss.str());
+  log_error(
+    "Exception thrown of type {} at file {} line {}",
+    exceptions_thrown.begin()->as_string(),
+    instruction.location.file(),
+    instruction.location.line());
+
   // We check before iterate over the throw list to save time:
   // If there is no catch, we return an error
   if(!stack_catch.size())
@@ -200,13 +192,11 @@ bool goto_symext::symex_throw()
   }
 
   // Log
-  {
-    std::ostringstream oss;
-    oss << "*** Caught by catch(" << catch_name << ") at file "
-        << (*catch_insn)->location.file() << " line "
-        << (*catch_insn)->location.line() << "\n";
-    msg.status(oss.str());
-  }
+  log_status(
+    "Caught by catch({}) at file {} line {}",
+    catch_name,
+    (*catch_insn)->location.file(),
+    (*catch_insn)->location.line());
 
   return true;
 }
@@ -321,7 +311,7 @@ void goto_symext::update_throw_target(
       {
         statet::goto_state_listt &goto_state_list = i->goto_state_map[target];
 
-        goto_state_list.emplace_back(*cur_state, msg);
+        goto_state_list.emplace_back(*cur_state);
         cur_state->guard.make_false();
         break;
       }

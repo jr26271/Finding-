@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module:
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #ifndef CPROVER_STD_TYPES_H
 #define CPROVER_STD_TYPES_H
 
@@ -684,14 +676,11 @@ public:
   {
     return (exprt &)add(a_size);
   }
-
-  friend const vector_typet &to_vector_type(const typet &type)
-  {
-    assert(type.id() == t_vector);
-    return static_cast<const vector_typet &>(type);
-  }
 };
 
-const vector_typet &to_vector_type(const typet &type);
-
+inline const vector_typet &to_vector_type(const typet &type)
+{
+  assert(type.id() == typet::t_vector);
+  return static_cast<const vector_typet &>(type);
+}
 #endif

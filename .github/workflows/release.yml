@@ -9,24 +9,18 @@ name: Upload Release Asset
 jobs:
   build-linux:
     name: Build Linux Release
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    container: rafaelsamenezes/esbmc-ci:clang11
     steps:
       - name: Checkout code
         uses: actions/checkout@master
-      - name: Install Dependencies
-        run: sudo apt-get update && sudo apt-get install gperf libgmp-dev cmake bison flex gcc-multilib linux-libc-dev libboost-all-dev ninja-build python3-setuptools libtinfo-dev
-      - name: Download Clang 11
-        run: wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/clang+llvm-11.0.0-x86_64-linux-gnu-ubuntu-20.04.tar.xz
-      - name: Extract Clang 11
-        run: tar xf clang+llvm-11.0.0-x86_64-linux-gnu-ubuntu-20.04.tar.xz && mv clang+llvm-11.0.0-x86_64-linux-gnu-ubuntu-20.04 clang
-      - name: Setup boolector
-        run: git clone --depth=1 --branch=3.2.2 https://github.com/boolector/boolector && cd boolector && ./contrib/setup-lingeling.sh && ./contrib/setup-btor2tools.sh && ./configure.sh --prefix $PWD/../boolector-release && cd build && make -j4 && make install
-      - name: Setup Z3
-        run: wget https://github.com/Z3Prover/z3/releases/download/z3-4.8.9/z3-4.8.9-x64-ubuntu-16.04.zip && unzip z3-4.8.9-x64-ubuntu-16.04.zip && mv z3-4.8.9-x64-ubuntu-16.04/ z3
-      - name: Get current folder and files
-        run: pwd && ls
+      - run: apt update  # Only for Docker jobs
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+      - name: Fix dubious ownership
+        run: git config --global --add safe.directory /__w/esbmc/esbmc
       - name: Configure CMake
-        run: mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -GNinja -DClang_DIR=$PWD/../clang -DLLVM_DIR=$PWD/../clang -DBUILD_STATIC=On -DBoolector_DIR=$PWD/../boolector-release -DZ3_DIR=$PWD/../z3 -DENABLE_JIMPLE_FRONTEND=On -DENABLE_SOLIDITY_FRONTEND=On
+        run: mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -GNinja -DClang_DIR=/workspace/clang -DLLVM_DIR=/workspace/clang -DBUILD_STATIC=On -DBoolector_DIR=/workspace/boolector-release -DZ3_DIR=/workspace/z3 -DENABLE_JIMPLE_FRONTEND=On -DENABLE_SOLIDITY_FRONTEND=On
       - name: Build ESBMC
         run: cd build && cmake --build . && cpack && mv ESBMC-*.sh ESBMC-Linux.sh
       - uses: actions/upload-artifact@v1
@@ -53,7 +47,7 @@ jobs:
       - name: Get current folder and files
         run: pwd && ls
       - name: Configure CMake
-        run: mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -GNinja -DBUILD_STATIC=On -DClang_DIR=$PWD/../clang -DLLVM_DIR=$PWD/../clang -DBoolector_DIR=$PWD/../boolector-release -DZ3_DIR=$PWD/../z3 -DC2GOTO_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -DENABLE_SOLIDITY_FRONTEND=On
+        run: mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -GNinja -DClang_DIR=$PWD/../clang -DLLVM_DIR=$PWD/../clang -DBoolector_DIR=$PWD/../boolector-release -DZ3_DIR=$PWD/../z3 -DC2GOTO_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -DENABLE_SOLIDITY_FRONTEND=On -DBUILD_STATIC=Off -DENABLE_JIMPLE_FRONTEND=On
       - name: Build ESBMC
         run: cd build && cmake --build . && cpack && mv ESBMC-*.sh ESBMC-Darwin.sh
       - uses: actions/upload-artifact@v1
@@ -76,8 +70,11 @@ jobs:
         git config --system core.autocrlf false
         git config --system core.eol lf
     - uses: actions/checkout@v2
-    - name: Instal gnu tools (od)
-      run: choco install -y gnuwin32-coreutils.portable nsis.portable
+    - name: Install dependencies (flex, bison, od)
+      run: |
+        Write-Host "Set TLS1.2"
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor "Tls12"
+        choco install -y nsis.portable winflexbison --ignore-checksums
     - name: Check if od is on path
       run: od.exe --version
     - name: Update vcpkg
@@ -90,8 +87,6 @@ jobs:
       run: vcpkg.exe integrate install
     - name: Install Boost
       run: vcpkg.exe install boost-filesystem:x64-Windows boost-date-time:x64-windows boost-test:x64-windows boost-multi-index:x64-windows boost-crc:x64-windows boost-property-tree:x64-windows boost-uuid:x64-windows boost-program-options:x64-windows boost-iostreams:x64-windows
-    - name: Install Bison/Flex
-      run: choco install -y winflexbison
     - name: Prepare Environment
       run: .\scripts\configure_environment.ps1
     - name: Check environment
@@ -102,7 +97,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake.exe .. -A x64 -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DENABLE_REGRESSION=On -DBUILD_TESTING=On -DCMAKE_BUILD_TYPE=RelWithDebInfo -DLLVM_DIR=C:/deps/clang/clang -DClang_DIR=C:/deps/clang/clang -DZ3_DIR=C:/deps/ -DBOOST_DLL_FILE="C:/deps/boost_filesystem-vc143-mt-x64-1_79.dll;C:/deps/boost_program_options-vc143-mt-x64-1_79.dll" -DCMAKE_INSTALL_PREFIX:PATH=C:/deps/esbmc -DENABLE_SOLIDITY_FRONTEND=On
+        cmake.exe .. -A x64 -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DENABLE_REGRESSION=On -DBUILD_TESTING=On -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBOOST_DLL_FILE="C:/deps/boost_filesystem-vc143-mt-x64-1_80.dll;C:/deps/boost_program_options-vc143-mt-x64-1_80.dll" -DCMAKE_INSTALL_PREFIX:PATH=C:/deps/esbmc -DENABLE_SOLIDITY_FRONTEND=On -DENABLE_JIMPLE_FRONTEND=On -DDOWNLOAD_WINDOWS_DEPENDENCIES=On
     - name: Build ESBMC
       run: |
         cd build

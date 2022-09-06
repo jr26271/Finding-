@@ -155,12 +155,8 @@ public:
 class smtlib_smt_ast : public smt_ast
 {
 public:
-  smtlib_smt_ast(
-    smt_convt *ctx,
-    const smt_sort *s,
-    smt_func_kind k,
-    const messaget &msg)
-    : smt_ast(ctx, s, msg), kind(k)
+  smtlib_smt_ast(smt_convt *ctx, const smt_sort *s, smt_func_kind k)
+    : smt_ast(ctx, s), kind(k)
   {
   }
   ~smtlib_smt_ast() override = default;
@@ -178,10 +174,7 @@ public:
 class smtlib_convt : public smt_convt, public array_iface, public fp_convt
 {
 public:
-  smtlib_convt(
-    const namespacet &_ns,
-    const optionst &options,
-    const messaget &msg);
+  smtlib_convt(const namespacet &_ns, const optionst &options);
   ~smtlib_convt() override;
 
   resultt dec_solve() override;

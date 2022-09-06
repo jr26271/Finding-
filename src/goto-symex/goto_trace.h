@@ -1,13 +1,3 @@
-/*******************************************************************\
-
-Module: Traces of GOTO Programs
-
-Author: Daniel Kroening
-
-Date: July 2005
-
-\*******************************************************************/
-
 #ifndef CPROVER_GOTO_SYMEX_GOTO_TRACE_H
 #define CPROVER_GOTO_SYMEX_GOTO_TRACE_H
 
@@ -88,10 +78,7 @@ public:
   std::string format_string;
   std::list<expr2tc> output_args;
 
-  void output(
-    const class namespacet &ns,
-    std::ostream &out,
-    const messaget &msg) const;
+  void output(const class namespacet &ns, std::ostream &out) const;
   void dump() const;
 
   goto_trace_stept() : step_nr(0), thread_nr(0), guard(false)
@@ -113,35 +100,28 @@ public:
     steps.clear();
   }
 
-  void output(
-    const class namespacet &ns,
-    std::ostream &out,
-    const messaget &msg) const;
+  void output(const class namespacet &ns, std::ostream &out) const;
 };
 
 void show_goto_trace_gui(
   std::ostream &out,
   const namespacet &ns,
-  const goto_tracet &goto_trace,
-  const messaget &msg);
+  const goto_tracet &goto_trace);
 
 void show_goto_trace(
   std::ostream &out,
   const namespacet &ns,
-  const goto_tracet &goto_trace,
-  const messaget &msg);
+  const goto_tracet &goto_trace);
 
 void violation_graphml_goto_trace(
   optionst &options,
   const namespacet &ns,
-  const goto_tracet &goto_trace,
-  const messaget &msg);
+  const goto_tracet &goto_trace);
 
 void correctness_graphml_goto_trace(
   optionst &options,
   const namespacet &ns,
-  const goto_tracet &goto_trace,
-  const messaget &msg);
+  const goto_tracet &goto_trace);
 
 void generate_goto_trace_in_correctness_graphml_format(
   std::string &witness_output,
@@ -154,7 +134,6 @@ void counterexample_value(
   std::ostream &out,
   const namespacet &ns,
   const expr2tc &identifier,
-  const expr2tc &value,
-  const messaget &msg);
+  const expr2tc &value);
 
 #endif

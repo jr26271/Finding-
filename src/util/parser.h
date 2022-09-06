@@ -3,11 +3,11 @@
 
 #include <string>
 #include <util/expr.h>
-#include <util/message/message.h>
+#include <util/message.h>
 #include <vector>
 #include <istream>
 
-class parsert : public messaget
+class parsert
 {
 public:
   std::istream *in;
@@ -31,7 +31,6 @@ public:
     clear();
   }
 
-  ~parsert() override = default;
   parsert(const parsert &obj) = delete;
   parsert &operator=(const parsert &rhs) = delete;
 

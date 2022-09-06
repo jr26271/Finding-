@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module:
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <ac_config.h>
 #include <boost/filesystem.hpp>
 #include <c2goto/cprover_library.h>
@@ -124,15 +116,12 @@ static void ingest_symbol(
   deps.erase(name);
 }
 
-void add_cprover_library(
-  contextt &context,
-  const messaget &message_handler,
-  const languaget *c_language)
+void add_cprover_library(contextt &context, const languaget *c_language)
 {
   if(config.ansi_c.lib == configt::ansi_ct::libt::LIB_NONE)
     return;
 
-  contextt new_ctx(message_handler), store_ctx(message_handler);
+  contextt new_ctx, store_ctx;
   goto_functionst goto_functions;
   std::multimap<irep_idt, irep_idt> symbol_deps;
   std::list<irep_idt> to_include;
@@ -141,7 +130,7 @@ void add_cprover_library(
   switch(config.ansi_c.word_size)
   {
   case 16:
-    message_handler.warning(
+    log_warning(
       "Warning: this version of ESBMC does not have a C library "
       "for 16 bit machines");
     return;
@@ -149,8 +138,7 @@ void add_cprover_library(
   case 64:
     break;
   default:
-    message_handler.error(
-      fmt::format("No C library for bitwidth {}", config.ansi_c.word_size));
+    log_error("No C library for bitwidth {}", config.ansi_c.word_size);
     abort();
   }
 
@@ -160,13 +148,12 @@ void add_cprover_library(
   if(clib->size == 0)
   {
     if(c_language)
-      return add_bundled_library_sources(context, message_handler, *c_language);
-    message_handler.error("error: Zero-lengthed internal C library");
+      return add_bundled_library_sources(context, *c_language);
+    log_error("error: Zero-lengthed internal C library");
     abort();
   }
 
-  if(read_goto_binary_array(
-       clib->start, clib->size, new_ctx, goto_functions, message_handler))
+  if(read_goto_binary_array(clib->start, clib->size, new_ctx, goto_functions))
     abort();
 
   new_ctx.foreach_operand([&symbol_deps](const symbolt &s) {
@@ -215,10 +202,10 @@ void add_cprover_library(
     }
   }
 
-  if(c_link(context, store_ctx, message_handler, "<built-in-library>"))
+  if(c_link(context, store_ctx, "<built-in-library>"))
   {
     // Merging failed
-    message_handler.error("Failed to merge C library");
+    log_error("Failed to merge C library");
     abort();
   }
 }

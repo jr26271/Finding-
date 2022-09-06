@@ -1,10 +1,9 @@
 #include <goto-symex/renaming.h>
 #include <langapi/language_util.h>
 #include <irep2/irep2.h>
+#include <util/message.h>
 #include <util/migrate.h>
 #include <util/prefix.h>
-#include <util/message/format.h>
-#include <util/message/default_message.h>
 
 unsigned renaming::level2t::current_number(const expr2tc &symbol) const
 {
@@ -201,15 +200,13 @@ void renaming::level2t::coveredinbees(
 
 void renaming::renaming_levelt::get_original_name(
   expr2tc &expr,
-  symbol2t::renaming_level lev,
-  const messaget &msg)
+  symbol2t::renaming_level lev)
 {
   if(is_nil_expr(expr))
     return;
 
-  expr->Foreach_operand([&lev, &msg](expr2tc &e) {
-    renaming_levelt::get_original_name(e, lev, msg);
-  });
+  expr->Foreach_operand(
+    [&lev](expr2tc &e) { renaming_levelt::get_original_name(e, lev); });
 
   if(!is_symbol2t(expr))
     return;
@@ -247,19 +244,19 @@ void renaming::renaming_levelt::get_original_name(
     return;
 
   default:
-    msg.error(fmt::format("get_original_nameing to invalid level {}", lev));
+    log_error("get_original_nameing to invalid level {}", lev);
     abort();
   }
 }
 
-void renaming::level1t::print(std::ostream &out, const messaget &) const
+void renaming::level1t::print(std::ostream &out) const
 {
   for(const auto &current_name : current_names)
     out << current_name.first.base_name << " --> "
         << "thread " << thread_id << " count " << current_name.second << "\n";
 }
 
-void renaming::level2t::print(std::ostream &out, const messaget &msg) const
+void renaming::level2t::print(std::ostream &out) const
 {
   for(const auto &current_name : current_names)
   {
@@ -274,7 +271,7 @@ void renaming::level2t::print(std::ostream &out, const messaget &msg) const
     if(!is_nil_expr(current_name.second.constant))
     {
       out << from_expr(
-               *migrate_namespace_lookup, "", current_name.second.constant, msg)
+               *migrate_namespace_lookup, "", current_name.second.constant)
           << "\n";
     }
     else
@@ -288,10 +285,9 @@ void renaming::level2t::print(std::ostream &out, const messaget &msg) const
 
 void renaming::level2t::dump() const
 {
-  default_message msg;
   std::ostringstream oss;
-  print(oss, msg);
-  msg.debug(oss.str());
+  print(oss);
+  log_debug("{}", oss.str());
 }
 
 void renaming::level2t::make_assignment(

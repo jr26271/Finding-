@@ -1,13 +1,5 @@
-/*******************************************************************\
-
-Module:
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <util/typecheck.h>
-#include <util/message/format.h>
+#include <util/message.h>
 
 bool typecheckt::typecheck_main()
 {
@@ -18,18 +10,21 @@ bool typecheckt::typecheck_main()
 
   catch(int e)
   {
-    error(fmt::format("{}", e));
+    log_error("{}", e);
+    abort();
   }
 
   catch(const char *e)
   {
-    error(e);
+    log_error("{}", e);
+    abort();
   }
 
   catch(const std::string &e)
   {
-    error(e);
+    log_error("{}", e);
+    abort();
   }
 
-  return error_found;
+  return false;
 }

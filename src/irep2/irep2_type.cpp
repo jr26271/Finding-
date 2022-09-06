@@ -6,10 +6,10 @@
 #include <irep2/irep2_type.h>
 #include <irep2/irep2_expr.h>
 #include <irep2/irep2_utils.h>
+#include <util/message.h>
+#include <util/message/format.h>
 #include <util/migrate.h>
 #include <util/std_types.h>
-#include <util/message/format.h>
-#include <util/message/default_message.h>
 
 /*************************** Base type2t definitions **************************/
 
@@ -106,8 +106,7 @@ std::string type2t::pretty(unsigned int indent) const
 
 void type2t::dump() const
 {
-  default_message msg;
-  msg.debug(pretty(0));
+  log_status("{}", pretty(0));
 }
 
 size_t type2t::crc() const
@@ -277,23 +276,19 @@ unsigned int struct_union_data::get_component_number(const irep_idt &comp) const
 
   if(!count)
   {
-    assert(
-      0 &&
-      fmt::format(
-        "Looking up index of nonexistant member \"{}\" in struct/union \"{}\"",
-        comp,
-        name)
-        .c_str());
+    log_error(
+      "Looking up index of nonexistant member \"{}\" in struct/union \"{}\"",
+      comp,
+      name);
+    abort();
   }
   else if(count > 1)
   {
-    assert(
-      0 &&
-      fmt::format(
-        "Name \"{}\" matches more than one member\" in struct/union \"{}\"",
-        comp,
-        name)
-        .c_str());
+    log_error(
+      "Name \"{}\" matches more than one member\" in struct/union \"{}\"",
+      comp,
+      name);
+    abort();
   }
 
   abort();

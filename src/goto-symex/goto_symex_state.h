@@ -1,12 +1,3 @@
-/*******************************************************************\
-
-   Module: Symbolic Execution
-
-   Author: Daniel Kroening, kroening@kroening.com Lucas Cordeiro,
-     lcc08r@ecs.soton.ac.uk
-
-\*******************************************************************/
-
 #ifndef CPROVER_GOTO_SYMEX_GOTO_SYMEX_STATE_H
 #define CPROVER_GOTO_SYMEX_GOTO_SYMEX_STATE_H
 
@@ -55,8 +46,7 @@ public:
   goto_symex_statet(
     renaming::level2t &l2,
     value_sett &vs,
-    const namespacet &_ns,
-    const messaget &msg);
+    const namespacet &_ns);
 
   /**
    *  Copy constructor.
@@ -71,8 +61,7 @@ public:
   goto_symex_statet(
     const goto_symex_statet &state,
     renaming::level2t &l2,
-    value_sett &vs,
-    const messaget &msg);
+    value_sett &vs);
 
   goto_symex_statet(goto_symex_statet const &) = default;
 
@@ -109,15 +98,14 @@ public:
     unsigned int thread_id;
     variable_name_sett local_variables;
 
-    explicit goto_statet(const goto_symex_statet &s, const messaget &msg)
+    explicit goto_statet(const goto_symex_statet &s)
       : num_instructions(s.num_instructions),
         level2_ptr(s.level2.clone()),
         level2(*level2_ptr),
         value_set(s.value_set),
         guard(s.guard),
         thread_id(s.source.thread_nr),
-        local_variables(s.top().local_variables),
-        msg(msg)
+        local_variables(s.top().local_variables)
     {
     }
 
@@ -128,8 +116,7 @@ public:
         value_set(s.value_set),
         guard(s.guard),
         thread_id(s.thread_id),
-        local_variables(s.local_variables),
-        msg(s.msg)
+        local_variables(s.local_variables)
     {
     }
 
@@ -142,7 +129,6 @@ public:
     ~goto_statet() = default;
 
   protected:
-    const messaget &msg;
   };
 
   /**
@@ -478,7 +464,6 @@ public:
 
   /** Namespace to work with. */
   const namespacet &ns;
-  const messaget &msg;
 
   /** Map of what pointer values have been realloc'd, and what their new
    *  realloc number is. No need for special consideration when merging states

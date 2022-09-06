@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Symbolic Execution
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <cassert>
 #include <goto-symex/goto_symex.h>
 #include <goto-symex/goto_symex_state.h>
@@ -16,14 +8,12 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <irep2/irep2.h>
 #include <util/migrate.h>
 #include <util/std_expr.h>
-#include <util/message/default_message.h>
 
 void symex_target_equationt::debug_print_step(const SSA_stept &step) const
 {
-  default_message msg;
   std::ostringstream oss;
-  step.output(ns, oss, msg);
-  msg.debug(oss.str());
+  step.output(ns, oss);
+  log_debug("{}", oss.str());
 }
 
 void symex_target_equationt::assignment(
@@ -173,8 +163,8 @@ void symex_target_equationt::convert_internal_step(
   if(ssa_trace)
   {
     std::ostringstream oss;
-    step.output(ns, oss, msg);
-    msg.status(oss.str());
+    step.output(ns, oss);
+    log_status("{}", oss.str());
   }
 
   step.guard_ast = smt_conv.convert_ast(step.guard);
@@ -242,7 +232,7 @@ void symex_target_equationt::output(std::ostream &out) const
 {
   for(const auto &SSA_step : SSA_steps)
   {
-    SSA_step.output(ns, out, msg);
+    SSA_step.output(ns, out);
     out << "--------------"
         << "\n";
   }
@@ -253,22 +243,20 @@ void symex_target_equationt::short_output(std::ostream &out, bool show_ignored)
 {
   for(const auto &SSA_step : SSA_steps)
   {
-    SSA_step.short_output(ns, out, msg, show_ignored);
+    SSA_step.short_output(ns, out, show_ignored);
   }
 }
 
 void symex_target_equationt::SSA_stept::dump() const
 {
-  default_message msg;
   std::ostringstream oss;
-  output(*migrate_namespace_lookup, oss, msg);
-  msg.debug(oss.str());
+  output(*migrate_namespace_lookup, oss);
+  log_debug("{}", oss.str());
 }
 
 void symex_target_equationt::SSA_stept::output(
   const namespacet &ns,
-  std::ostream &out,
-  const messaget &msg) const
+  std::ostream &out) const
 {
   if(source.is_set)
   {
@@ -305,29 +293,27 @@ void symex_target_equationt::SSA_stept::output(
   }
 
   if(is_assert() || is_assume() || is_assignment())
-    out << from_expr(ns, "", migrate_expr_back(cond), msg) << "\n";
+    out << from_expr(ns, "", migrate_expr_back(cond)) << "\n";
 
   if(is_assert())
     out << comment << "\n";
 
   if(config.options.get_bool_option("ssa-guards"))
-    out << "Guard: " << from_expr(ns, "", migrate_expr_back(guard), msg)
-        << "\n";
+    out << "Guard: " << from_expr(ns, "", migrate_expr_back(guard)) << "\n";
 }
 
 void symex_target_equationt::SSA_stept::short_output(
   const namespacet &ns,
   std::ostream &out,
-  const messaget &msg,
   bool show_ignored) const
 {
   if((is_assignment() || is_assert() || is_assume()) && show_ignored == ignore)
   {
-    out << from_expr(ns, "", cond, msg) << "\n";
+    out << from_expr(ns, "", cond) << "\n";
   }
   else if(is_renumber())
   {
-    out << "renumber: " << from_expr(ns, "", lhs, msg) << "\n";
+    out << "renumber: " << from_expr(ns, "", lhs) << "\n";
   }
 }
 
@@ -368,12 +354,11 @@ void symex_target_equationt::check_for_duplicate_assigns() const
   {
     if(it->second != 1)
     {
-      msg.status(
-        fmt::format("Symbol \"{}\" appears {} times", it->first, it->second));
+      log_status("Symbol \"{}\" appears {} times", it->first, it->second);
     }
   }
 
-  msg.status(fmt::format("Checked {} insns", i));
+  log_status("Checked {} insns", i);
 }
 
 unsigned int symex_target_equationt::clear_assertions()
@@ -396,9 +381,8 @@ unsigned int symex_target_equationt::clear_assertions()
 
 runtime_encoded_equationt::runtime_encoded_equationt(
   const namespacet &_ns,
-  smt_convt &_conv,
-  const messaget &msg)
-  : symex_target_equationt(_ns, msg), conv(_conv)
+  smt_convt &_conv)
+  : symex_target_equationt(_ns), conv(_conv)
 {
   assert_vec_list.emplace_back();
   assumpt_chain.push_back(conv.convert_ast(gen_true_expr()));
@@ -534,7 +518,7 @@ tvt runtime_encoded_equationt::ask_solver_question(const expr2tc &question)
     res1 == smt_convt::P_ERROR || res1 == smt_convt::P_SMTLIB ||
     res2 == smt_convt::P_ERROR || res2 == smt_convt::P_SMTLIB)
   {
-    msg.error("Solver returned error while asking question");
+    log_error("Solver returned error while asking question");
     abort();
   }
   else if(res1 == smt_convt::P_SATISFIABLE && res2 == smt_convt::P_SATISFIABLE)

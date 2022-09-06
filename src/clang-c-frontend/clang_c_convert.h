@@ -46,7 +46,6 @@ public:
   clang_c_convertert(
     contextt &_context,
     std::vector<std::unique_ptr<clang::ASTUnit>> &_ASTs,
-    const messaget &msg,
     irep_idt _mode);
   virtual ~clang_c_convertert() = default;
 
@@ -62,8 +61,7 @@ public:
  * @param type Union type
  * @param msg  Message object
  */
-  static void
-  gen_typecast_to_union(exprt &dest, const typet &type, const messaget &msg);
+  static void gen_typecast_to_union(exprt &dest, const typet &type);
 
   static std::string get_decl_name(const clang::NamedDecl &nd);
 
@@ -72,7 +70,6 @@ protected:
   contextt &context;
   namespacet ns;
   std::vector<std::unique_ptr<clang::ASTUnit>> &ASTs;
-  const messaget &msg;
   irep_idt mode;
   symbol_generator anon_symbol;
 
@@ -206,8 +203,6 @@ protected:
   const clang::Decl *get_DeclContext_from_Stmt(const clang::Stmt &stmt);
 
   const clang::Decl *get_top_FunctionDecl_from_Stmt(const clang::Stmt &stmt);
-
-  void gen_typecast_to_union(exprt &dest, const typet &type);
 };
 
 #endif /* CLANG_C_FRONTEND_CLANG_C_CONVERT_H_ */

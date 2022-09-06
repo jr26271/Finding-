@@ -1,12 +1,3 @@
-/*******************************************************************
- Module: goto_programt -> irep conversion
-
- Author: CM Wintersteiger
-
- Date: May 2007
-
-\*******************************************************************/
-
 #include <goto-programs/goto_program_irep.h>
 #include <util/i2string.h>
 
@@ -122,7 +113,7 @@ void convert(const irept &irep, goto_programt &program)
 
       if(fit == program.instructions.end())
       {
-        program.msg.error(
+        log_error(
           "Warning: could not resolve target link "
           "during irep->goto_program translation.");
         abort();

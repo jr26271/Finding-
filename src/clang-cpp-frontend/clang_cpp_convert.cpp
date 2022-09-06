@@ -18,6 +18,7 @@
 
 #include <clang-cpp-frontend/clang_cpp_convert.h>
 #include <util/expr_util.h>
+#include <util/message.h>
 #include <util/std_code.h>
 #include <util/std_expr.h>
 #include <fmt/core.h>
@@ -25,9 +26,8 @@
 clang_cpp_convertert::clang_cpp_convertert(
   contextt &_context,
   std::vector<std::unique_ptr<clang::ASTUnit>> &_ASTs,
-  const messaget &msg,
   irep_idt _mode)
-  : clang_c_convertert(_context, _ASTs, msg, _mode)
+  : clang_c_convertert(_context, _ASTs, _mode)
 {
 }
 
@@ -283,7 +283,7 @@ bool clang_cpp_convertert::get_struct_union_class_methods(
 
   if(cxxrd->bases().begin() != cxxrd->bases().end())
   {
-    msg.error(fmt::format("inheritance is not supported in {}", __func__));
+    log_error("inheritance is not supported in {}", __func__);
     abort();
   }
 
@@ -301,7 +301,7 @@ bool clang_cpp_convertert::get_struct_union_class_methods(
         llvm::dyn_cast<clang::FunctionTemplateDecl>(decl))
     {
       assert(ftd->isThisDeclarationADefinition());
-      msg.error(fmt::format("template is not supported in {}", __func__));
+      log_error("template is not supported in {}", __func__);
       abort();
     }
     else
@@ -322,8 +322,7 @@ bool clang_cpp_convertert::get_struct_union_class_methods(
       // Add only if it isn't static
       if(!cxxmd->isStatic())
       {
-        msg.error(
-          fmt::format("static method is not supported in {}", __func__));
+        log_error("static method is not supported in {}", __func__);
         abort();
       }
     }
@@ -554,6 +553,32 @@ bool clang_cpp_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
     break;
   }
 
+  case clang::Stmt::CXXDeleteExprClass:
+  {
+    const clang::CXXDeleteExpr &de =
+      static_cast<const clang::CXXDeleteExpr &>(stmt);
+
+    new_expr = de.isArrayFormAsWritten()
+                 ? side_effect_exprt("cpp_delete[]", empty_typet())
+                 : side_effect_exprt("cpp_delete", empty_typet());
+
+    exprt arg;
+    if(get_expr(*de.getArgument(), arg))
+      return true;
+
+    new_expr.move_to_operands(arg);
+
+    if(de.getDestroyedType()->getAsCXXRecordDecl())
+    {
+      typet destt;
+      if(get_type(de.getDestroyedType(), destt))
+        return true;
+      new_expr.type() = destt;
+    }
+
+    break;
+  }
+
   case clang::Stmt::CXXPseudoDestructorExprClass:
   {
     new_expr = exprt("pseudo_destructor");
@@ -598,8 +623,7 @@ bool clang_cpp_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
 
       if(mt != nullptr)
       {
-        msg.error(
-          fmt::format("elidable copy/move is not supported in {}", __func__));
+        log_error("elidable copy/move is not supported in {}", __func__);
         abort();
       }
     }
@@ -621,9 +645,9 @@ bool clang_cpp_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
     this_mapt::iterator it = this_map.find(address);
     if(this_map.find(address) == this_map.end())
     {
-      msg.error(fmt::format(
+      log_error(
         "Pointer `this' for method {} was not added to scope",
-        clang_c_convertert::get_decl_name(*current_functionDecl)));
+        clang_c_convertert::get_decl_name(*current_functionDecl));
       abort();
     }
 
@@ -666,10 +690,22 @@ bool clang_cpp_convertert::get_constructor_call(
   // Try to get the object that this constructor is constructing
   auto it = ASTContext->getParents(constructor_call).begin();
 
-  //exprt object;
   const clang::Decl *objectDecl = it->get<clang::Decl>();
+  if(!objectDecl)
+  {
+    address_of_exprt tmp_expr;
+    tmp_expr.type() = pointer_typet();
+    tmp_expr.type().subtype() = type;
 
-  //call.arguments().push_back(object);
+    exprt new_object("new_object");
+    new_object.set("#lvalue", true);
+    new_object.type() = type;
+
+    tmp_expr.operands().resize(0);
+    tmp_expr.move_to_operands(new_object);
+
+    call.arguments().push_back(tmp_expr);
+  }
 
   // Do args
   for(const clang::Expr *arg : constructor_call.arguments())
@@ -683,17 +719,9 @@ bool clang_cpp_convertert::get_constructor_call(
 
   call.set("constructor", 1);
 
-  // Now, if we built a new object, then we must build a temporary
-  // object around it
-  if(objectDecl != nullptr)
-  {
-    new_expr.swap(call);
-  }
-  else
-  {
-    msg.error(fmt::format("temporary is not supported in {}", __func__));
-    abort();
-  }
+  // We don't build a temporary obejct around it.
+  // We follow the old cpp frontend to just add the ctor function call.
+  new_expr.swap(call);
 
   return false;
 }
@@ -708,9 +736,9 @@ void clang_cpp_convertert::build_member_from_component(
   this_mapt::iterator it = this_map.find(address);
   if(this_map.find(address) == this_map.end())
   {
-    msg.error(fmt::format(
+    log_error(
       "Pointer `this' for method {} was not added to scope",
-      clang_c_convertert::get_decl_name(fd)));
+      clang_c_convertert::get_decl_name(fd));
     abort();
   }
 
@@ -764,7 +792,7 @@ bool clang_cpp_convertert::get_function_body(
           }
           else
           {
-            msg.error(fmt::format("Unsupported initializer in {}", __func__));
+            log_error("Unsupported initializer in {}", __func__);
             abort();
           }
 
@@ -779,8 +807,7 @@ bool clang_cpp_convertert::get_function_body(
         }
         else
         {
-          msg.error(fmt::format(
-            "Base class initializer is not supported in {}", __func__));
+          log_error("Base class initializer is not supported in {}", __func__);
           abort();
         }
 
@@ -980,11 +1007,12 @@ bool clang_cpp_convertert::get_decl_ref(
     // depending on whether they are C++-specific or not.
     std::ostringstream oss;
     llvm::raw_os_ostream ross(oss);
-    ross << "Conversion of unsupported clang decl ref for: "
-         << decl.getDeclKindName() << "\n";
     decl.dump(ross);
     ross.flush();
-    msg.warning(oss.str());
+    log_warning(
+      "Conversion of unsupported clang decl ref for: {}\n{}",
+      decl.getDeclKindName(),
+      oss.str());
     return true;
   }
   }

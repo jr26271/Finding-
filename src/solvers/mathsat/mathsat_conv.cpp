@@ -30,8 +30,8 @@ void mathsat_convt::check_msat_error(msat_term &r) const
 {
   if(MSAT_ERROR_TERM(r))
   {
-    msg.error("Error creating SMT ");
-    msg.error(fmt::format("Error text: \"{}\"", msat_last_error_message(env)));
+    log_error("Error creating SMT ");
+    log_error("Error text: \"{}\"", msat_last_error_message(env));
     abort();
   }
 }
@@ -41,22 +41,18 @@ smt_convt *create_new_mathsat_solver(
   const namespacet &ns,
   tuple_iface **tuple_api [[maybe_unused]],
   array_iface **array_api,
-  fp_convt **fp_api,
-  const messaget &msg)
+  fp_convt **fp_api)
 {
-  mathsat_convt *conv = new mathsat_convt(ns, options, msg);
+  mathsat_convt *conv = new mathsat_convt(ns, options);
   *array_api = static_cast<array_iface *>(conv);
   *fp_api = static_cast<fp_convt *>(conv);
   return conv;
 }
 
-mathsat_convt::mathsat_convt(
-  const namespacet &ns,
-  const optionst &options,
-  const messaget &msg)
-  : smt_convt(ns, options, msg),
+mathsat_convt::mathsat_convt(const namespacet &ns, const optionst &options)
+  : smt_convt(ns, options),
     array_iface(false, false),
-    fp_convt(this, msg),
+    fp_convt(this),
     use_fp_api(false)
 {
   cfg = msat_parse_config(mathsat_config);
@@ -114,7 +110,7 @@ bool mathsat_convt::get_bool(smt_astt a)
     res = false;
   else
   {
-    msg.error("Boolean model value is neither true or false");
+    log_error("Boolean model value is neither true or false");
     abort();
   }
 
@@ -170,7 +166,7 @@ ieee_floatt mathsat_convt::get_fpbv(smt_astt a)
   size_t ew, sw;
   if(!msat_is_fp_type(env, to_solver_smt_sort<msat_type>(a->sort)->s, &ew, &sw))
   {
-    msg.error("Non FP type passed to mathsat_convt::get_exp_width");
+    log_error("Non FP type passed to mathsat_convt::get_exp_width");
     abort();
   }
 
@@ -894,9 +890,8 @@ mathsat_convt::convert_array_of(smt_astt init_val, unsigned long domain_width)
 mathsat_smt_ast::mathsat_smt_ast(
   smt_convt *ctx,
   msat_term _t,
-  const smt_sort *_s,
-  const messaget &msg)
-  : solver_smt_ast<msat_term>(ctx, _t, _s, msg)
+  const smt_sort *_s)
+  : solver_smt_ast<msat_term>(ctx, _t, _s)
 {
   auto convt = dynamic_cast<const mathsat_convt *>(context);
   assert(convt != nullptr);
@@ -905,12 +900,11 @@ mathsat_smt_ast::mathsat_smt_ast(
 
 void mathsat_smt_ast::dump() const
 {
-  default_message msg;
   // We need to get the env
   auto convt = dynamic_cast<const mathsat_convt *>(context);
   assert(convt != nullptr);
 
-  msg.debug(msat_to_smtlib2(convt->env, a));
+  log_debug("{}", msat_to_smtlib2(convt->env, a));
 }
 
 void mathsat_convt::dump_smt()
@@ -920,7 +914,7 @@ void mathsat_convt::dump_smt()
     msat_get_asserted_formulas(env, &num_of_asserted);
 
   for(unsigned i = 0; i < num_of_asserted; i++)
-    msg.status(msat_to_smtlib2(env, asserted_formulas[i]));
+    log_status("{}", msat_to_smtlib2(env, asserted_formulas[i]));
 
   msat_free(asserted_formulas);
 }

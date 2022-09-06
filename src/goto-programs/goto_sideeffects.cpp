@@ -1,16 +1,10 @@
-/*******************************************************************\
-
-Module: Program Transformation
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <goto-programs/goto_convert_class.h>
 #include <util/c_types.h>
 #include <util/cprover_prefix.h>
 #include <util/expr_util.h>
 #include <util/i2string.h>
+#include <util/message.h>
+#include <util/message/format.h>
 #include <util/rename.h>
 #include <util/std_expr.h>
 
@@ -53,7 +47,11 @@ void goto_convertt::remove_sideeffects(
   if(expr.is_and() || expr.is_or())
   {
     if(!expr.is_boolean())
-      throw expr.id_string() + " must be Boolean, but got " + expr.pretty();
+    {
+      log_error(
+        "{} must be Boolean, but got {}", expr.id_string(), expr.pretty());
+      abort();
+    }
 
     exprt tmp;
 
@@ -72,7 +70,10 @@ void goto_convertt::remove_sideeffects(
       exprt &op = *it;
 
       if(!op.is_boolean())
-        throw expr.id().as_string() + " takes boolean operands only";
+      {
+        log_error("{} takes boolean operands only", expr.id().as_string());
+        abort();
+      }
 
       if(expr.is_and())
       {
@@ -111,10 +112,10 @@ void goto_convertt::remove_sideeffects(
 
     const locationt location = expr.location();
 
-    goto_programt tmp_true(get_message_handler());
+    goto_programt tmp_true;
     remove_sideeffects(if_expr.true_case(), tmp_true, result_is_used);
 
-    goto_programt tmp_false(get_message_handler());
+    goto_programt tmp_false;
     remove_sideeffects(if_expr.false_case(), tmp_false, result_is_used);
 
     if(result_is_used)
@@ -287,6 +288,8 @@ void goto_convertt::remove_sideeffects(
       remove_pre(expr, dest, result_is_used);
     else if(statement == "cpp_new" || statement == "cpp_new[]")
       remove_cpp_new(expr, dest, result_is_used);
+    else if(statement == "cpp_delete" || statement == "cpp_delete[]")
+      remove_cpp_delete(expr, dest);
     else if(statement == "temporary_object")
       remove_temporary_object(expr, dest);
     else if(statement == "nondet")
@@ -312,8 +315,8 @@ void goto_convertt::remove_sideeffects(
     }
     else
     {
-      str << "cannot remove side effect (" << statement << ")";
-      throw 0;
+      log_error("cannot remove side effect ({})", statement);
+      abort();
     }
   }
 }
@@ -341,9 +344,11 @@ void goto_convertt::remove_assignment(
   {
     if(expr.operands().size() != 2)
     {
-      err_location(expr);
-      str << statement << " takes two arguments";
-      throw 0;
+      std::ostringstream str;
+      str << statement << " takes two arguments\n";
+      str << "Location: " << expr.location();
+      log_error(str.str());
+      abort();
     }
 
     exprt rhs;
@@ -422,9 +427,11 @@ void goto_convertt::remove_assignment(
     }
     else
     {
-      err_location(expr);
-      str << statement << " not yet supported";
-      throw 0;
+      std::ostringstream str;
+      str << statement << " not yet supported\n";
+      str << "Location: " << expr.location();
+      log_error("{}", str.str());
+      abort();
     }
 
     rhs.copy_to_operands(expr.op0(), expr.op1());
@@ -468,9 +475,11 @@ void goto_convertt::remove_pre(
 
   if(expr.operands().size() != 1)
   {
-    err_location(expr);
-    str << statement << " takes one argument";
-    throw 0;
+    std::ostringstream str;
+    str << statement << " takes one argument\n";
+    str << "Location: " << expr.location();
+    log_error("{}", str.str());
+    abort();
   }
 
   exprt rhs;
@@ -517,8 +526,11 @@ void goto_convertt::remove_pre(
       constant_type = op_type;
     else
     {
-      err_location(expr);
-      throw "no constant one of type " + op_type.to_string();
+      std::ostringstream str;
+      str << "no constant one of type " + op_type.to_string() << "\n";
+      str << "Location: " << expr.location();
+      log_error(str.str());
+      abort();
     }
 
     exprt constant = gen_one(constant_type);
@@ -554,9 +566,11 @@ void goto_convertt::remove_post(
 
   if(expr.operands().size() != 1)
   {
-    err_location(expr);
+    std::ostringstream str;
     str << statement << " takes one argument";
-    throw 0;
+    str << "Location: " << expr.location();
+    log_error("{}", str.str());
+    abort();
   }
 
   exprt rhs;
@@ -603,8 +617,11 @@ void goto_convertt::remove_post(
       constant_type = op_type;
     else
     {
-      err_location(expr);
-      throw "no constant one of type " + op_type.to_string();
+      std::ostringstream str;
+      str << "no constant one of type " + op_type.to_string();
+      str << "Location: " << expr.location();
+      log_error(str.str());
+      abort();
     }
 
     exprt constant = gen_one(constant_type);
@@ -617,7 +634,7 @@ void goto_convertt::remove_post(
   code_assignt assignment(expr.op0(), rhs);
   assignment.location() = expr.location();
 
-  goto_programt tmp(get_message_handler());
+  goto_programt tmp;
   convert(assignment, tmp);
 
   // fix up the expression, if needed
@@ -702,7 +719,7 @@ void goto_convertt::remove_function_call(
   assignment.copy_to_operands(symbol_expr(new_symbol));
   assignment.move_to_operands(call);
 
-  goto_programt tmp_program(get_message_handler());
+  goto_programt tmp_program;
   convert(assignment, tmp_program);
   dest.destructive_append(tmp_program);
 
@@ -723,6 +740,10 @@ void goto_convertt::remove_cpp_new(
   goto_programt &dest,
   bool result_is_used)
 {
+  // For side effect with 'cpp_new' statement, `expr' refers to the side effect that
+  // contains an initializer. Technically, this function converts the cpp_new side effect
+  // and replaces it with a new symbol if `result_is_used` is true. It's not just simply
+  // removing the side effect node in the exprt tree.
   codet call;
 
   symbolt new_symbol;
@@ -739,12 +760,26 @@ void goto_convertt::remove_cpp_new(
 
   call = code_assignt(symbol_expr(new_symbol), expr);
 
-  if(result_is_used)
+  if(result_is_used) // e.g. used to construct an assignment 'code_assignt'
     expr = symbol_expr(new_symbol);
   else
     expr.make_nil();
 
   convert(call, dest);
+}
+
+void goto_convertt::remove_cpp_delete(exprt &expr, goto_programt &dest)
+{
+  assert(expr.operands().size() == 1); // cpp_delete expects one operand
+
+  codet tmp(expr.statement());
+  tmp.location() = expr.location();
+  tmp.copy_to_operands(to_unary_expr(expr).op0());
+  tmp.set("destructor", expr.find("destructor"));
+
+  convert_cpp_delete(tmp, dest);
+
+  expr.make_nil();
 }
 
 void goto_convertt::remove_temporary_object(exprt &expr, goto_programt &dest)
@@ -763,7 +798,7 @@ void goto_convertt::remove_temporary_object(exprt &expr, goto_programt &dest)
     assignment.copy_to_operands(symbol_expr(new_symbol));
     assignment.move_to_operands(expr.op0());
 
-    goto_programt tmp_program(get_message_handler());
+    goto_programt tmp_program;
     convert(assignment, tmp_program);
     dest.destructive_append(tmp_program);
   }
@@ -774,7 +809,7 @@ void goto_convertt::remove_temporary_object(exprt &expr, goto_programt &dest)
     exprt initializer = static_cast<const exprt &>(expr.initializer());
     replace_new_object(symbol_expr(new_symbol), initializer);
 
-    goto_programt tmp_program(get_message_handler());
+    goto_programt tmp_program;
     convert(to_code(initializer), tmp_program);
     dest.destructive_append(tmp_program);
   }
@@ -835,7 +870,7 @@ void goto_convertt::remove_statement_expression(
     throw "statement_expression expects expression or assignment";
 
   {
-    goto_programt tmp(get_message_handler());
+    goto_programt tmp;
     convert(code, tmp);
     dest.destructive_append(tmp);
   }

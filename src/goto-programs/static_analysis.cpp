@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Value Set Propagation
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <cassert>
 #include <goto-programs/static_analysis.h>
 #include <memory>
@@ -84,11 +76,11 @@ void static_analysis_baset::output(
 {
   forall_goto_program_instructions(i_it, goto_program)
   {
-    out << "**** " << i_it->location << "\n";
+    out << i_it->location << "\n";
 
     get_state(i_it).output(ns, out);
     out << "\n";
-    i_it->output_instruction(ns, identifier, out, msg);
+    i_it->output_instruction(ns, identifier, out);
     out << "\n";
   }
 }
@@ -372,8 +364,7 @@ void static_analysis_baset::do_function_call_rec(
   }
   else
   {
-    msg.error(fmt::format(
-      "unexpected function_call argument: ", get_expr_id(function)));
+    log_error("unexpected function_call argument: {}", get_expr_id(function));
     abort();
   }
 }

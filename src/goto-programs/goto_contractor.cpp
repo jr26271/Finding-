@@ -1,14 +1,8 @@
-//
-// Created by Mohannad Aldughaim on 09/01/2022.
-//
-
 #include <goto-programs/goto_contractor.h>
 
-void goto_contractor(
-  goto_functionst &goto_functions,
-  const messaget &message_handler)
+void goto_contractor(goto_functionst &goto_functions)
 {
-  goto_contractort gotoContractort(goto_functions, message_handler);
+  goto_contractort gotoContractort(goto_functions);
 
   goto_functions.update();
 }
@@ -39,7 +33,7 @@ void goto_contractort::get_intervals(goto_functionst goto_functions)
       parse_intervals(ins.guard);
 }
 
-void goto_contractort::parse_intervals(irep_container<expr2t> expr)
+void goto_contractort::parse_intervals(expr2tc expr)
 {
   symbol2tc symbol;
   BigInt value;
@@ -80,7 +74,6 @@ void goto_contractort::parse_intervals(irep_container<expr2t> expr)
 
   value = to_constant_int2t(side2).as_long() * (neg ? -1 : 1);
 
-  //int index = map->find(symbol->get_symbol_name());
   if(map.find(symbol->get_symbol_name()) == CspMap::NOT_FOUND)
     return;
   switch(expr->expr_id)
@@ -104,39 +97,49 @@ void goto_contractort::parse_intervals(irep_container<expr2t> expr)
 void goto_contractort::insert_assume(goto_functionst goto_functions)
 {
   loopst loop;
+  unsigned int last_loc = 0;
+
+  ///This loop is to find the last loop in the code based on location
   for(auto &function_loop : function_loops)
-    loop = function_loop;
+    if(last_loc < function_loop.get_original_loop_head()->location_number)
+    {
+      loop = function_loop;
+      last_loc = loop.get_original_loop_head()->location_number;
+    }
 
   auto loop_exit = loop.get_original_loop_exit();
 
-  goto_programt dest(message_handler);
+  goto_programt dest;
 
   auto goto_function = goto_functions.function_map.find("c:@F@main")->second;
 
-  for(auto const &var : map.var_map)
+  if(map.is_empty_set())
   {
-    symbol2tc X = var.second.getSymbol();
-    if(var.second.isIntervalChanged())
-    {
-      auto lb = create_value_expr(var.second.getInterval().lb(), int_type2());
-      auto cond = create_greaterthanequal_relation(X, lb);
-      goto_programt tmp_e(message_handler);
-      goto_programt::targett e = tmp_e.add_instruction(ASSUME);
-      e->inductive_step_instruction = false;
-      e->guard = cond;
-      e->location = loop_exit->location;
-      goto_function.body.destructive_insert(loop_exit, tmp_e);
-
-      auto ub = create_value_expr(var.second.getInterval().ub(), int_type2());
-      auto cond2 = create_lessthanequal_relation(X, ub);
-      goto_programt tmp_e2(message_handler);
-      goto_programt::targett e2 = tmp_e2.add_instruction(ASSUME);
-      e2->inductive_step_instruction = false;
-      e2->guard = cond2;
-      e2->location = loop_exit->location;
-      goto_function.body.destructive_insert(loop_exit, tmp_e2);
-    }
+    auto cond = gen_zero(int_type2());
+    goto_programt tmp_e;
+    goto_programt::targett e = tmp_e.add_instruction(ASSUME);
+    e->inductive_step_instruction = false;
+    e->guard = cond;
+    e->location = loop_exit->location;
+    goto_function.body.destructive_insert(loop_exit, tmp_e);
   }
+  else
+    for(auto const &var : map.var_map)
+    {
+      symbol2tc X = var.second.getSymbol();
+      if(var.second.isIntervalChanged())
+      {
+        //only update upperbound
+        auto ub = create_value_expr(var.second.getInterval().ub(), int_type2());
+        auto cond2 = create_lessthanequal_relation(X, ub);
+        goto_programt tmp_e2;
+        goto_programt::targett e2 = tmp_e2.add_instruction(ASSUME);
+        e2->inductive_step_instruction = false;
+        e2->guard = cond2;
+        e2->location = loop_exit->location;
+        goto_function.body.destructive_insert(loop_exit, tmp_e2);
+      }
+    }
 }
 
 void goto_contractort::contractor()
@@ -165,7 +168,7 @@ void goto_contractort::contractor()
   oss << "\n\t- Domains (after): " << X;
   map.update_intervals(X);
 
-  message_handler.status(oss.str());
+  log_status("{}", oss.str());
 }
 
 ibex::CmpOp goto_contractort::get_complement(ibex::CmpOp op)
@@ -181,21 +184,22 @@ ibex::CmpOp goto_contractort::get_complement(ibex::CmpOp op)
   case ibex::LT:
     return ibex::GEQ;
   default:
-    message_handler.status("cant process equal");
+    log_status("cant process equal");
     break;
   }
   return ibex::GEQ;
 }
 
 ibex::NumConstraint *
-goto_contractort::create_constraint_from_expr2t(irep_container<expr2t> expr)
+goto_contractort::create_constraint_from_expr2t(expr2tc expr)
 {
   ibex::NumConstraint *c;
-  if(
-    is_arith_expr(expr) || is_constant_number(expr) || is_symbol2t(expr) ||
-    is_notequal2t(expr) || is_equality2t(expr))
+  if(is_unsupported_operator(expr))
   {
-    message_handler.status("Expression is complex, skipping this assert");
+    std::ostringstream oss;
+    oss << get_expr_id(expr);
+    oss << "Expression is complex, skipping this assert.\n";
+    log_debug("{}", oss.str());
     return nullptr;
   }
 
@@ -225,6 +229,14 @@ goto_contractort::create_constraint_from_expr2t(irep_container<expr2t> expr)
     return nullptr;
   }
   return c;
+}
+
+bool goto_contractort::is_unsupported_operator(expr2tc expr)
+{
+  expr2tc e = get_base_object(expr);
+  return is_arith_expr(e) || is_constant_number(e) || is_symbol2t(e) ||
+         is_notequal2t(e) || is_equality2t(e) || is_not2t(e) ||
+         is_modulus2t(e) || is_or2t(e) || is_and2t(e);
 }
 
 ibex::Function *
@@ -280,7 +292,7 @@ goto_contractort::create_function_from_expr2t(irep_container<expr2t> expr)
     }
     else
     {
-      message_handler.error("ERROR: MAX VAR SIZE REACHED");
+      log_error("ERROR: MAX VAR SIZE REACHED");
       return nullptr;
     }
     break;
@@ -321,8 +333,7 @@ bool goto_contractort::initialize_main_function_loops()
     runOnFunction(*it);
     if(it->second.body_available)
     {
-      const messaget msg;
-      goto_loopst goto_loops(it->first, goto_functions, it->second, msg);
+      goto_loopst goto_loops(it->first, goto_functions, it->second);
       this->function_loops = goto_loops.get_loops();
     }
   }
@@ -334,10 +345,12 @@ const ibex::Interval &vart::getInterval() const
 {
   return interval;
 }
+
 int vart::getIndex() const
 {
   return index;
 }
+
 vart::vart(const string &varName, const symbol2tc &symbol, const size_t &index)
 {
   this->var_name = varName;
@@ -345,18 +358,22 @@ vart::vart(const string &varName, const symbol2tc &symbol, const size_t &index)
   this->index = index;
   interval_changed = false;
 }
+
 void vart::setInterval(const ibex::Interval &interval)
 {
   this->interval = interval;
 }
+
 bool vart::isIntervalChanged() const
 {
   return interval_changed;
 }
+
 void vart::setIntervalChanged(bool intervalChanged)
 {
   interval_changed = intervalChanged;
 }
+
 const symbol2tc &vart::getSymbol() const
 {
   return symbol;

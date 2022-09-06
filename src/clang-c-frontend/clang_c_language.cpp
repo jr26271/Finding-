@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: C++ Language Module
-
-Author: Daniel Kroening, kroening@cs.cmu.edu
-
-\*******************************************************************/
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -23,17 +15,17 @@ Author: Daniel Kroening, kroening@cs.cmu.edu
 #include <clang-c-frontend/expr2c.h>
 #include <sstream>
 #include <util/c_link.h>
-#include <util/message/format.h>
+
 #include <util/filesystem.h>
 
 #include <ac_config.h>
 
-languaget *new_clang_c_language(const messaget &msg)
+languaget *new_clang_c_language()
 {
-  return new clang_c_languaget(msg);
+  return new clang_c_languaget();
 }
 
-clang_c_languaget::clang_c_languaget(const messaget &msg) : languaget(msg)
+clang_c_languaget::clang_c_languaget()
 {
   // Build the compile arguments
   build_compiler_args(clang_headers_path());
@@ -43,6 +35,9 @@ void clang_c_languaget::build_compiler_args(const std::string &tmp_dir)
 {
   compiler_args.emplace_back("clang-tool");
 
+  // TODO: Implement a similar way to add opertional models for C++. For the time being,
+  // we are still following the way old ESBMC++ includes these operational models using -I.
+  // See discussions in PR834.
   const std::string *libc_headers = internal_libc_header_dir();
   if(libc_headers)
   {
@@ -63,8 +58,7 @@ void clang_c_languaget::build_compiler_args(const std::string &tmp_dir)
     break;
 
   default:
-    msg.error(
-      fmt::format("Unknown word size: {}\n", config.ansi_c.word_size).c_str());
+    log_error("Unknown word size: {}\n", config.ansi_c.word_size);
     abort();
   }
 
@@ -100,7 +94,7 @@ void clang_c_languaget::build_compiler_args(const std::string &tmp_dir)
   for(auto const &def : config.ansi_c.defines)
     compiler_args.push_back("-D" + def);
 
-  if(msg.get_verbosity() >= VerbosityLevel::Debug)
+  if(messaget::state.verbosity >= VerbosityLevel::Debug)
     compiler_args.emplace_back("-v");
 
   compiler_args.emplace_back("-target");
@@ -205,12 +199,12 @@ void clang_c_languaget::force_file_type()
   compiler_args.push_back("c");
 }
 
-bool clang_c_languaget::parse(const std::string &path, const messaget &msg)
+bool clang_c_languaget::parse(const std::string &path)
 {
   // preprocessing
 
   std::ostringstream o_preprocessed;
-  if(preprocess(path, o_preprocessed, msg))
+  if(preprocess(path, o_preprocessed))
     return true;
 
   // Force the file type, .c for the C frontend and .cpp for the C++ one
@@ -236,22 +230,19 @@ bool clang_c_languaget::parse(const std::string &path, const messaget &msg)
   return false;
 }
 
-bool clang_c_languaget::typecheck(
-  contextt &context,
-  const std::string &module,
-  const messaget &msg)
+bool clang_c_languaget::typecheck(contextt &context, const std::string &module)
 {
-  contextt new_context(msg);
+  contextt new_context;
 
-  clang_c_convertert converter(new_context, ASTs, msg, "C");
+  clang_c_convertert converter(new_context, ASTs, "C");
   if(converter.convert())
     return true;
 
-  clang_c_adjust adjuster(new_context, msg);
+  clang_c_adjust adjuster(new_context);
   if(adjuster.adjust())
     return true;
 
-  if(c_link(context, new_context, msg, module))
+  if(c_link(context, new_context, module))
     return true;
 
   return false;
@@ -263,23 +254,20 @@ void clang_c_languaget::show_parse(std::ostream &)
     (*translation_unit).getASTContext().getTranslationUnitDecl()->dump();
 }
 
-bool clang_c_languaget::preprocess(
-  const std::string &,
-  std::ostream &,
-  const messaget &)
+bool clang_c_languaget::preprocess(const std::string &, std::ostream &)
 {
 // TODO: Check the preprocess situation.
 #if 0
-  return c_preprocess(path, outstream, false, message_handler);
+  return c_preprocess(path, outstream, false);
 #endif
   return false;
 }
 
-bool clang_c_languaget::final(contextt &context, const messaget &msg)
+bool clang_c_languaget::final(contextt &context)
 {
-  add_cprover_library(context, msg, this);
+  add_cprover_library(context, this);
   // adds __ESBMC__main symbol
-  return clang_main(context, msg);
+  return clang_main(context);
 }
 
 std::string clang_c_languaget::internal_additions()

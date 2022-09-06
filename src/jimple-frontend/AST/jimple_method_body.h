@@ -1,7 +1,3 @@
-//
-// Created by rafaelsamenezes on 21/09/2021.
-//
-
 #ifndef ESBMC_JIMPLE_METHOD_BODY_H
 #define ESBMC_JIMPLE_METHOD_BODY_H
 
@@ -10,7 +6,7 @@
 
 /**
  * @brief A Jimple method declaration
- * 
+ *
  * Something such as: public void foo() { }
  */
 class jimple_method_body : public jimple_ast
@@ -42,7 +38,7 @@ public:
 
 /**
  * @brief A Jimple method definition
- * 
+ *
  * Something such as: public void foo();
  */
 class jimple_empty_method_body : public jimple_method_body
@@ -51,7 +47,7 @@ class jimple_empty_method_body : public jimple_method_body
 
 /**
  * @brief A Jimple method definition
- * 
+ *
  * Something such as: public void foo() { }
  */
 class jimple_full_method_body : public jimple_method_body
@@ -76,7 +72,8 @@ public:
     Goto,          // goto 1;
     If,            // if <expr> goto <Label>
     Declaration,   // int a;
-    Throw          // throw <expr>
+    Throw,         // throw <expr>
+    Location       // Extra, reffers to the line number
   };
 
   std::vector<std::shared_ptr<jimple_method_field>> members;
@@ -93,7 +90,8 @@ private:
     {"Goto", statement::Goto},
     {"SetVariable", statement::Assignment},
     {"If", statement::If},
-    {"Throw", statement::Throw}};
+    {"Throw", statement::Throw},
+    {"Location", statement::Location}};
 
   std::map<statement, std::string> to_map = {
     {statement::Identity, "Identity"},
@@ -106,7 +104,8 @@ private:
     {statement::Assignment, "Assignment"},
     {statement::If, "If"},
     {statement::Declaration, "Declaration"},
-    {statement::Throw, "Throw"}};
+    {statement::Throw, "Throw"},
+    {statement::Location, "Location"}};
 };
 
 #endif //ESBMC_JIMPLE_METHOD_BODY_H

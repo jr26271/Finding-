@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Jimple Language
-
-Author: Rafael Sá Menezes, rafael.sa.menezes@outlook.com
-
-\*******************************************************************/
-
 #pragma once
 
 #include <langapi/mode.h>
@@ -15,18 +7,12 @@ Author: Rafael Sá Menezes, rafael.sa.menezes@outlook.com
 class jimple_languaget : public languaget
 {
 public:
-  jimple_languaget(const messaget &msg) : languaget(msg)
-  {
-  }
-  bool parse(const std::string &path, const messaget &msg) override;
+  bool parse(const std::string &path) override;
 
-  bool final(contextt &context, const messaget &msg) override;
+  bool final(contextt &context) override;
 
   // AST -> GOTO
-  bool typecheck(
-    contextt &context,
-    const std::string &module,
-    const messaget &msg) override;
+  bool typecheck(contextt &context, const std::string &module) override;
 
   std::string id() const override
   {
@@ -47,9 +33,9 @@ public:
   bool from_type(const typet &type, std::string &code, const namespacet &ns)
     override;
 
-  virtual languaget *new_language(const messaget &msg) const override
+  virtual languaget *new_language() const override
   {
-    return new jimple_languaget(msg);
+    return new jimple_languaget;
   }
 
   jimple_file root;

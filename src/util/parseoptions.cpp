@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module:
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #if defined(_WIN32)
 #define EX_OK 0
 #define EX_USAGE 1
@@ -22,9 +14,8 @@ Author: Daniel Kroening, kroening@kroening.com
 parseoptions_baset::parseoptions_baset(
   const struct group_opt_templ *opts,
   int argc,
-  const char **argv,
-  const messaget &msg)
-  : cmdline(msg), executable_path(argv[0])
+  const char **argv)
+  : executable_path(argv[0])
 {
   exception_occured = cmdline.parse(argc, argv, opts);
 }

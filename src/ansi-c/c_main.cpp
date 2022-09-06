@@ -55,10 +55,7 @@ void static_lifetime_init(const contextt &context, codet &dest)
   });
 }
 
-bool c_main(
-  contextt &context,
-  const std::string &standard_main,
-  const messaget &message_handler)
+bool c_main(contextt &context, const std::string &standard_main)
 {
   irep_idt main_symbol;
 
@@ -81,19 +78,17 @@ bool c_main(
 
   if(matches.empty())
   {
-    message_handler.error("main symbol `" + themain + "' not found");
+    log_error("main symbol `" + themain + "' not found");
     return true; // give up
   }
 
   if(matches.size() >= 2)
   {
-    messaget message(message_handler);
     if(matches.size() == 2)
-      message_handler.error(
-        "warning: main symbol `" + themain + "' is ambiguous");
+      log_error("warning: main symbol `" + themain + "' is ambiguous");
     else
     {
-      message_handler.error("main symbol `" + themain + " is ambiguous");
+      log_error("main symbol `" + themain + " is ambiguous");
       return true;
     }
   }
@@ -321,7 +316,7 @@ bool c_main(
 
   if(context.move(new_symbol))
   {
-    message_handler.error("main already defined by another language module");
+    log_error("main already defined by another language module");
     return true;
   }
 

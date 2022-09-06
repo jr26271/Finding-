@@ -1,9 +1,3 @@
-/*******************************************************************\
-
-Module: Solidity AST module
-
-\*******************************************************************/
-
 // Remove warnings from Clang headers
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
@@ -20,19 +14,19 @@ Module: Solidity AST module
 #include <clang-c-frontend/expr2c.h>
 #include <util/c_link.h>
 
-languaget *new_solidity_language(const messaget &msg)
+languaget *new_solidity_language()
 {
-  return new solidity_languaget(msg);
+  return new solidity_languaget;
 }
 
-std::string solidity_languaget::get_temp_file(const messaget &msg)
+std::string solidity_languaget::get_temp_file()
 {
   // Create a temp file for clang-tool
   // needed to convert intrinsics
   auto p = boost::filesystem::temp_directory_path();
   if(!boost::filesystem::exists(p) || !boost::filesystem::is_directory(p))
   {
-    msg.error("Can't find temporary directory (needed to convert intrinsics)");
+    log_error("Can't find temporary directory (needed to convert intrinsics)");
     abort();
   }
 
@@ -41,7 +35,7 @@ std::string solidity_languaget::get_temp_file(const messaget &msg)
   boost::filesystem::create_directory(p);
   if(!boost::filesystem::is_directory(p))
   {
-    msg.error(
+    log_error(
       "Can't create temporary directory (needed to convert intrinsics)");
     abort();
   }
@@ -56,19 +50,14 @@ std::string solidity_languaget::get_temp_file(const messaget &msg)
   return p.string();
 }
 
-solidity_languaget::solidity_languaget(const messaget &msg)
-  : clang_c_languaget(msg)
-{
-}
-
-bool solidity_languaget::parse(const std::string &path, const messaget &msg)
+bool solidity_languaget::parse(const std::string &path)
 {
   // prepare temp file
-  temp_path = get_temp_file(msg);
+  temp_path = get_temp_file();
 
   // get AST nodes of ESBMC intrinsics and the dummy main
   // populate ASTs inherited from parent class
-  clang_c_languaget::parse(temp_path, msg);
+  clang_c_languaget::parse(temp_path);
 
   // Process AST json file
   std::ifstream ast_json_file_stream(path);
@@ -100,39 +89,33 @@ bool solidity_languaget::parse(const std::string &path, const messaget &msg)
   return false;
 }
 
-bool solidity_languaget::convert_intrinsics(
-  contextt &context,
-  const messaget &msg)
+bool solidity_languaget::convert_intrinsics(contextt &context)
 {
-  clang_c_convertert converter(context, ASTs, msg, "C");
+  clang_c_convertert converter(context, ASTs, "C");
   if(converter.convert())
     return true;
   return false;
 }
 
-bool solidity_languaget::typecheck(
-  contextt &context,
-  const std::string &module,
-  const messaget &msg)
+bool solidity_languaget::typecheck(contextt &context, const std::string &module)
 {
-  contextt new_context(msg);
+  contextt new_context;
   convert_intrinsics(
-    new_context, msg); // Add ESBMC and TACAS intrinsic symbols to the context
-  msg.progress("Done conversion of intrinsics...");
+    new_context); // Add ESBMC and TACAS intrinsic symbols to the context
+  log_progress("Done conversion of intrinsics...");
 
   solidity_convertert converter(
-    new_context, ast_json, func_name, smart_contract, msg);
+    new_context, ast_json, func_name, smart_contract);
   if(converter.convert()) // Add Solidity symbols to the context
     return true;
 
-  clang_c_adjust adjuster(new_context, msg);
+  clang_c_adjust adjuster(new_context);
   if(adjuster.adjust())
     return true;
 
   if(c_link(
        context,
        new_context,
-       msg,
        module)) // also populates language_uit::context
     return true;
 
@@ -144,10 +127,10 @@ void solidity_languaget::show_parse(std::ostream &)
   assert(!"come back and continue - solidity_languaget::show_parse");
 }
 
-bool solidity_languaget::final(contextt &context, const messaget &msg)
+bool solidity_languaget::final(contextt &context)
 {
-  add_cprover_library(context, msg);
-  return clang_main(context, msg);
+  add_cprover_library(context);
+  return clang_main(context);
 }
 
 std::string solidity_languaget::temp_c_file()

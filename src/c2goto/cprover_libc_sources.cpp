@@ -3,6 +3,7 @@
 #include <c2goto/cprover_library.h>
 #include <fstream>
 #include <util/language.h>
+#include <util/filesystem.h>
 
 extern "C"
 {
@@ -89,22 +90,17 @@ const std::string *internal_libc_header_dir()
            : &internal_libc.header_dir();
 }
 
-void add_bundled_library_sources(
-  contextt &context,
-  const messaget &message_handler,
-  const languaget &c_language)
+void add_bundled_library_sources(contextt &context, const languaget &c_language)
 {
   /* First extract headers (if not already done) */
   if(internal_libc_header_dir())
     /* Next, extract (if not already done) and process every libc/libm file. */
     internal_libc.foreach_libc_libm([&](const std::string &path) {
-      languaget *l = c_language.new_language(message_handler);
-      message_handler.status("file " + path + ": Parsing");
-      if(
-        l->parse(path, message_handler) ||
-        l->typecheck(context, path, message_handler))
+      languaget *l = c_language.new_language();
+      log_status("file " + path + ": Parsing");
+      if(l->parse(path) || l->typecheck(context, path))
       {
-        message_handler.error("error processing internal libc source " + path);
+        log_error("error processing internal libc source " + path);
         abort();
       }
       delete l;

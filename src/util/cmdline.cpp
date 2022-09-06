@@ -1,22 +1,14 @@
-/*******************************************************************\
-
-Module:
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <cassert>
 #include <cstdlib>
+#include <sstream>
 
 #include <util/cmdline.h>
-#include <sstream>
-#include <util/message/format.h>
+#include <util/message.h>
 
 /* Parses 's' according to a simple interpretation of shell rules, taking only
  * whitespace and the characters ', " and \ into account. */
 static std::vector<std::string>
-simple_shell_unescape(const char *s, const messaget &msg, const char *var)
+simple_shell_unescape(const char *s, const char *var)
 {
   static const char WHITE[] = " \t\r\n\f\v";
 
@@ -96,7 +88,7 @@ simple_shell_unescape(const char *s, const messaget &msg, const char *var)
         }
         break;
       case ESC:
-        msg.error("Arrived at an unreachable place");
+        log_error("Arrived at an unreachable place");
         abort();
       }
       arg.push_back(*s++);
@@ -104,10 +96,10 @@ simple_shell_unescape(const char *s, const messaget &msg, const char *var)
   done:
     if(mode)
     {
-      msg.warning(fmt::format(
+      log_warning(
         "cannot parse environment variable {}: unfinished {}, ignoring...",
         var,
-        mode));
+        mode);
       return {};
     }
     split.emplace_back(std::move(arg));
@@ -205,7 +197,7 @@ bool cmdlinet::parse(
   {
     boost::program_options::store(
       boost::program_options::command_line_parser(
-        simple_shell_unescape(getenv("ESBMC_OPTS"), msg, "ESBMC_OPTS"))
+        simple_shell_unescape(getenv("ESBMC_OPTS"), "ESBMC_OPTS"))
         .options(all_cmdline_options)
         .run(),
       vm);
@@ -218,7 +210,7 @@ bool cmdlinet::parse(
   }
   catch(std::exception &e)
   {
-    msg.error(fmt::format("ESBMC error: {}", e.what()));
+    log_error("ESBMC error: {}", e.what());
     return true;
   }
 

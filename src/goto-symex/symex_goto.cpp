@@ -1,12 +1,3 @@
-/*******************************************************************\
-
-   Module: Symbolic Execution
-
-   Author: Daniel Kroening, kroening@kroening.com Lucas Cordeiro,
-     lcc08r@ecs.soton.ac.uk
-
-\*******************************************************************/
-
 #include <cassert>
 #include <fstream>
 #include <goto-symex/goto_symex.h>
@@ -154,7 +145,7 @@ void goto_symext::symex_goto(const expr2tc &old_guard)
   statet::goto_state_listt &goto_state_list =
     cur_state->top().goto_state_map[new_state_pc];
 
-  goto_state_list.emplace_back(*cur_state, msg);
+  goto_state_list.emplace_back(*cur_state);
 
   // adjust guards
   if(new_guard_true)
@@ -453,7 +444,7 @@ bool goto_symext::get_unwind(
     this_loop_max_unwind != 0 && unwind >= this_loop_max_unwind;
   if(!options.get_bool_option("quiet"))
   {
-    msg.status(fmt::format(
+    log_status(
       stop_unwind ? "Not unwinding "
                   : "Unwinding "
                     "loop {} {} {} {} {}",
@@ -461,7 +452,7 @@ bool goto_symext::get_unwind(
       " iteration ",
       integer2string(unwind),
       " ",
-      cur_state->source.pc->location.as_string()));
+      cur_state->source.pc->location.as_string());
   }
 
   return stop_unwind;

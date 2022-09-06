@@ -2,7 +2,6 @@
 #define SOLVERS_SMT_TUPLE_SMT_TUPLE_NODE_AST_H_
 
 #include <solvers/smt/smt_conv.h>
-#include <util/message/default_message.h>
 
 class tuple_node_smt_ast;
 typedef const tuple_node_smt_ast *tuple_node_smt_astt;
@@ -32,9 +31,8 @@ public:
     smt_tuple_node_flattener &f,
     smt_convt *ctx,
     smt_sortt s,
-    std::string _name,
-    const messaget &msg)
-    : smt_ast(ctx, s, msg), name(std::move(_name)), flat(f)
+    std::string _name)
+    : smt_ast(ctx, s), name(std::move(_name)), flat(f)
   {
   }
   ~tuple_node_smt_ast() override = default;
@@ -59,8 +57,7 @@ public:
 
   void dump() const override
   {
-    default_message msg;
-    msg.debug(fmt::format("name {}", name));
+    log_debug("name {}", name);
     for(auto const &e : elements)
       e->dump();
   }

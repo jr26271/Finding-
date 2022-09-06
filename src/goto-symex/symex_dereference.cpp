@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Symbolic Execution of ANSI-C
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <goto-symex/goto_symex.h>
 #include <goto-symex/reachability_tree.h>
 #include <langapi/language_util.h>
@@ -177,8 +169,7 @@ void goto_symext::dereference(expr2tc &expr, dereferencet::modet mode)
 {
   symex_dereference_statet symex_dereference_state(*this, *cur_state);
 
-  dereferencet dereference(
-    ns, new_context, options, symex_dereference_state, msg);
+  dereferencet dereference(ns, new_context, options, symex_dereference_state);
 
   // needs to be renamed to level 1
   assert(!cur_state->call_stack.empty());

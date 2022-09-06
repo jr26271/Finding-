@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Program Transformation
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <cassert>
 #include <goto-programs/goto_convert_class.h>
 #include <goto-programs/goto_functions.h>
@@ -15,7 +7,6 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <util/i2string.h>
 #include <util/location.h>
 #include <util/prefix.h>
-#include <util/message/default_message.h>
 
 void goto_convertt::convert_function_call(
   const code_function_callt &function_call,
@@ -71,9 +62,7 @@ void goto_convertt::do_function_call(
   }
   else
   {
-    err_location(function);
-    message_handler.error(fmt::format(
-      "unexpected function argument: {}", new_function.id_string()));
+    log_error("unexpected function argument: {}", new_function.id_string());
     abort();
   }
 }
@@ -86,8 +75,8 @@ void goto_convertt::do_function_call_if(
 {
   if(function.operands().size() != 3)
   {
-    err_location(function);
-    throw "if expects three operands";
+    log_error("if expects three operands");
+    abort();
   }
 
   // case split
@@ -101,20 +90,20 @@ void goto_convertt::do_function_call_if(
   // z: ;
 
   // do the v label
-  goto_programt tmp_v(get_message_handler());
+  goto_programt tmp_v;
   goto_programt::targett v = tmp_v.add_instruction();
 
   // do the x label
-  goto_programt tmp_x(get_message_handler());
+  goto_programt tmp_x;
   goto_programt::targett x = tmp_x.add_instruction();
 
   // do the z label
-  goto_programt tmp_z(get_message_handler());
+  goto_programt tmp_z;
   goto_programt::targett z = tmp_z.add_instruction();
   z->make_skip();
 
   // y: g();
-  goto_programt tmp_y(get_message_handler());
+  goto_programt tmp_y;
   goto_programt::targett y;
 
   do_function_call(lhs, function.op2(), arguments, tmp_y);
@@ -138,7 +127,7 @@ void goto_convertt::do_function_call_if(
   }
 
   // w: f();
-  goto_programt tmp_w(get_message_handler());
+  goto_programt tmp_w;
 
   do_function_call(lhs, function.op1(), arguments, tmp_w);
 
@@ -175,10 +164,9 @@ void goto_convertt::do_function_call_dereference(
 
 void goto_functionst::dump() const
 {
-  default_message msg;
   std::ostringstream oss;
   output(*migrate_namespace_lookup, oss);
-  msg.debug(oss.str());
+  log_debug("{}", oss.str());
 }
 
 void goto_functionst::output(const namespacet &ns, std::ostream &out) const

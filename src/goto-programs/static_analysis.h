@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Static Analysis
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #ifndef CPROVER_GOTO_PROGRAMS_STATIC_ANALYSIS_H
 #define CPROVER_GOTO_PROGRAMS_STATIC_ANALYSIS_H
 
@@ -25,8 +17,7 @@ public:
 
   typedef goto_programt::const_targett locationt;
 
-  virtual void
-  initialize(const namespacet &ns, locationt l, const messaget &msg) = 0;
+  virtual void initialize(const namespacet &ns, locationt l) = 0;
 
   // how function calls are treated:
   // a) there is an edge from each call site to the function head
@@ -80,8 +71,7 @@ public:
   typedef abstract_domain_baset statet;
   typedef goto_programt::const_targett locationt;
 
-  static_analysis_baset(const namespacet &_ns, const messaget &msg)
-    : ns(_ns), msg(msg), initialized(false)
+  static_analysis_baset(const namespacet &_ns) : ns(_ns), initialized(false)
   {
   }
 
@@ -134,7 +124,6 @@ public:
 
 protected:
   const namespacet &ns;
-  const messaget &msg;
 
   virtual void output(
     const goto_programt &goto_program,
@@ -222,8 +211,7 @@ class static_analysist : public static_analysis_baset
 {
 public:
   // constructor
-  static_analysist(const namespacet &_ns, const messaget &msg)
-    : static_analysis_baset(_ns, msg)
+  static_analysist(const namespacet &_ns) : static_analysis_baset(_ns)
   {
   }
 
@@ -288,7 +276,7 @@ protected:
 
   void generate_state(locationt l) override
   {
-    state_map[l].initialize(ns, l, msg);
+    state_map[l].initialize(ns, l);
   }
 
   void get_reference_set(

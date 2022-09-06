@@ -3,16 +3,15 @@
 
 pattern_checker::pattern_checker(
   const nlohmann::json &_ast_nodes,
-  const std::string &_target_func,
-  const messaget &msg)
-  : ast_nodes(_ast_nodes), target_func(_target_func), msg(msg)
+  const std::string &_target_func)
+  : ast_nodes(_ast_nodes), target_func(_target_func)
 {
 }
 
 bool pattern_checker::do_pattern_check()
 {
   // TODO: add more functions here to perform more pattern-based checks
-  msg.status(fmt::format("Checking function {} ...", target_func.c_str()));
+  log_status("Checking function {} ...", target_func.c_str());
 
   unsigned index = 0;
   for(nlohmann::json::const_iterator itr = ast_nodes.begin();
@@ -47,9 +46,9 @@ void pattern_checker::check_authorization_through_tx_origin(
 {
   // looking for the pattern require(tx.origin == <VarDeclReference>)
   const nlohmann::json &body_stmt = func["body"]["statements"];
-  msg.progress(
+  log_progress(
     "  - Pattern-based checking: SWC-115 Authorization through tx.origin");
-  msg.debug("statements in function body array ... \n");
+  log_debug("statements in function body array ... \n");
 
   unsigned index = 0;
 
@@ -57,7 +56,7 @@ void pattern_checker::check_authorization_through_tx_origin(
       itr != body_stmt.end();
       ++itr, ++index)
   {
-    msg.status(fmt::format(" checking function body stmt {}", index));
+    log_status(" checking function body stmt {}", index);
     if(itr->contains("nodeType"))
     {
       if((*itr)["nodeType"].get<std::string>() == "ExpressionStatement")
@@ -127,9 +126,9 @@ void pattern_checker::check_tx_origin(const nlohmann::json &left_expr)
       if(left_expr["expression"]["name"].get<std::string>() == "tx")
       {
         //assert(!"Found vulnerability SWC-115 Authorization through tx.origin");
-        msg.error(
+        log_error(
           "Found vulnerability SWC-115 Authorization through tx.origin");
-        msg.error("VERIFICATION FAILED");
+        log_error("VERIFICATION FAILED");
         exit(EXIT_SUCCESS);
       }
     }

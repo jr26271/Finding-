@@ -1,42 +1,23 @@
-/*******************************************************************\
-
-Module: Slicer for symex traces
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #ifndef CPROVER_GOTO_SYMEX_SLICE_H
 #define CPROVER_GOTO_SYMEX_SLICE_H
 
-#include <goto-symex/renaming.h>
 #include <goto-symex/symex_target_equation.h>
-#include <unordered_set>
 
-BigInt slice(std::shared_ptr<symex_target_equationt> &eq, bool slice_assume);
-BigInt simple_slice(std::shared_ptr<symex_target_equationt> &eq);
-
-class symex_slicet
-{
-public:
-  symex_slicet(bool assume);
-  void slice(std::shared_ptr<symex_target_equationt> &eq);
-
-  typedef std::unordered_set<std::string> symbol_sett;
-  symbol_sett depends;
-  BigInt ignored;
-
-protected:
-  bool slice_assumes;
-  std::function<bool(const symbol2t &)> add_to_deps;
-
-  bool
-  get_symbols(const expr2tc &expr, std::function<bool(const symbol2t &)> fn);
-
-  void slice(symex_target_equationt::SSA_stept &SSA_step);
-  void slice_assume(symex_target_equationt::SSA_stept &SSA_step);
-  void slice_assignment(symex_target_equationt::SSA_stept &SSA_step);
-  void slice_renumber(symex_target_equationt::SSA_stept &SSA_step);
-};
+/**
+ * Marks SSA_steps to be ignored which have no effects on the target equation,
+ * according to the options set in the `config`.
+ *
+ * Notably, this function depends on the global `config`:
+ *  - "no-slice" in `options` -> perform only simple slicing: ignore everything
+ *    after the final assertion
+ *  - "slice-assumes" in `options` -> also perform slicing of assumption steps
+ *  - `config.no_slice_names` and `config.no_slice_ids` -> suppress slicing of
+ *    particular symbols in non-simple slicing mode.
+ *
+ * @param eq The target equation containing the SSA steps to perform program
+ *           slicing on.
+ * @return The number of ignored SSA steps due to this slicing.
+ */
+BigInt slice(std::shared_ptr<symex_target_equationt> &eq);
 
 #endif

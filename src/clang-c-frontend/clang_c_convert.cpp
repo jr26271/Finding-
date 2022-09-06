@@ -21,21 +21,19 @@
 #include <util/c_types.h>
 #include <util/expr_util.h>
 #include <util/i2string.h>
+#include <util/message.h>
 #include <util/mp_arith.h>
 #include <util/std_code.h>
 #include <util/std_expr.h>
-#include <util/message/format.h>
 
 clang_c_convertert::clang_c_convertert(
   contextt &_context,
   std::vector<std::unique_ptr<clang::ASTUnit>> &_ASTs,
-  const messaget &msg,
   irep_idt _mode)
   : ASTContext(nullptr),
     context(_context),
     ns(context),
     ASTs(_ASTs),
-    msg(msg),
     mode(_mode),
     anon_symbol("clang_c_convertert::"),
     current_scope_var_num(1),
@@ -163,12 +161,12 @@ bool clang_c_convertert::get_decl(const clang::Decl &decl, exprt &new_expr)
       clang::Expr::EvalResult result;
       if(!fd.getBitWidth()->EvaluateAsInt(result, *ASTContext))
       {
-        msg.error("Clang could not calculate bitfield width");
+        log_error("Clang could not calculate bitfield width");
         std::ostringstream oss;
         llvm::raw_os_ostream ross(oss);
         fd.getBitWidth()->dump(ross, *ASTContext);
         ross.flush();
-        msg.error(oss.str());
+        log_error("{}", oss.str());
         return true;
       }
 
@@ -273,12 +271,11 @@ bool clang_c_convertert::get_decl(const clang::Decl &decl, exprt &new_expr)
     std::ostringstream oss;
     llvm::raw_os_ostream ross(oss);
 
-    ross << "**** ERROR: ";
-    ross << "Unrecognized / unimplemented clang declaration "
+    ross << "unrecognized / unimplemented clang declaration "
          << decl.getDeclKindName() << "\n";
     decl.dump(ross);
     ross.flush();
-    msg.error(oss.str());
+    log_error("{}", oss.str());
     return true;
   }
 
@@ -289,7 +286,7 @@ bool clang_c_convertert::get_struct_union_class(const clang::RecordDecl &rd)
 {
   if(rd.isInterface())
   {
-    msg.error("Interface is not supported");
+    log_error("Interface is not supported");
     return true;
   }
 
@@ -411,12 +408,12 @@ bool clang_c_convertert::get_struct_union_class_fields(
           else
           {
             // I was not able to find an example to test this, so abort for now
-            msg.error("ESBMC currently does not support type alignments");
+            log_error("ESBMC currently does not support type alignments");
             std::ostringstream oss;
             llvm::raw_os_ostream ross(oss);
             aattr.getAlignmentType()->getType()->dump(ross, *ASTContext);
             ross.flush();
-            msg.error(oss.str());
+            log_error("{}", oss.str());
             return true;
           }
         }
@@ -450,23 +447,30 @@ bool clang_c_convertert::get_var(const clang::VarDecl &vd, exprt &new_expr)
     return true;
 
   // Check if we annotated it to be have an infinity size
+  bool no_slice = false;
   if(vd.hasAttrs())
   {
     for(auto const &attr : vd.getAttrs())
     {
       if(const auto *a = llvm::dyn_cast<clang::AnnotateAttr>(attr))
       {
-        if(a->getAnnotation().str() == "__ESBMC_inf_size")
+        const std::string &name = a->getAnnotation().str();
+        if(name == "__ESBMC_inf_size")
         {
           assert(t.is_array());
           t.size(exprt("infinity", uint_type()));
         }
+        else if(name == "__ESBMC_no_slice")
+          no_slice = true;
       }
     }
   }
 
   std::string id, name;
   get_decl_name(vd, name, id);
+
+  if(no_slice)
+    config.no_slice_names.emplace(id);
 
   locationt location_begin;
   get_location_from_decl(vd, location_begin);
@@ -495,37 +499,94 @@ bool clang_c_convertert::get_var(const clang::VarDecl &vd, exprt &new_expr)
     symbol.value.zero_initializer(true);
   }
 
-  // We have to add the symbol before converting the initial assignment
-  // because we might have something like 'int x = x + 1;' which is
-  // completely wrong but allowed by the language
-  symbolt &added_symbol = *move_symbol_to_context(symbol);
-
-  code_declt decl(symbol_expr(added_symbol));
-
-  if(vd.hasInit())
+  symbolt *added_symbol = nullptr;
+  if(symbol.static_lifetime && vd.hasInit())
   {
+    /* Static symbols can't refer to themselves in the initializer (which the
+     * 'else' case handles) as it would not be constant then.
+     *
+     * We need to get the initializer first, since it can contain compound
+     * literals (with their own initialization) that this variable here is
+     * initialized to:
+     *
+     * int x = (int){5};
+     *
+     * This creates a new symbol for the compound literal, and x's initializer
+     * should point to that (already initialized) symbol. As
+     * static_lifetime_init() expects the symbols to be initialized in the order
+     * they are put into the context, by getting the RHS first, we avoid first
+     * initializing 'x' and then the compound literal symbol, which would be
+     * wrong.
+     */
+
+    /* Since this is in static storage context, pretend that any surrounding
+     * block does not exist in order to force declarations by the RHS to appear
+     * in file scope as well. Technically, this is not fully correct, as the
+     * initialization of x in
+     *
+     * void f() {
+     *   static int x = 42;
+     * }
+     *
+     * should only occur the first time f() is run, but for C this makes no
+     * difference as x cannot be accessed outside of f() anyway and the
+     * initializer can't have side-effects (it's a constant expression). */
+    code_blockt *orig = current_block;
+    current_block = nullptr;
     exprt val;
-    if(get_expr(*vd.getInit(), val))
+    bool r = get_expr(*vd.getInit(), val);
+    current_block = orig;
+    if(r)
       return true;
 
+    added_symbol = move_symbol_to_context(symbol);
     gen_typecast(ns, val, t);
+    added_symbol->value = val;
 
-    added_symbol.value = val;
+    code_declt decl(symbol_expr(*added_symbol));
+    decl.location() = location_begin;
     decl.operands().push_back(val);
+
+    new_expr = decl;
   }
+  else
+  {
+    // We have to add the symbol before converting the initial assignment
+    // because we might have something like 'int x = x + 1;' which is
+    // completely wrong but allowed by the language
+    added_symbol = move_symbol_to_context(symbol);
 
-  decl.location() = location_begin;
+    code_declt decl(symbol_expr(*added_symbol));
+    decl.location() = location_begin;
 
-  new_expr = decl;
+    if(vd.hasInit())
+    {
+      exprt val;
+      if(get_expr(*vd.getInit(), val))
+        return true;
+
+      gen_typecast(ns, val, t);
+
+      added_symbol->value = val;
+      decl.operands().push_back(val);
+    }
+
+    new_expr = decl;
+  }
   return false;
 }
 
 bool clang_c_convertert::get_function(const clang::FunctionDecl &fd, exprt &)
 {
-  // Don't convert if implicit, unless it's a constructor
-  // A compiler-generated default constructor is considered implicit, but we have
+  // Don't convert if implicit, unless it's a constructor or destructor
+  // A compiler-generated default ctor/dtor is considered implicit, but we have
   // to parse it.
-  if(fd.isImplicit() && (fd.getKind() != clang::Decl::CXXConstructor))
+  auto isContructorOrDestructor = [](const clang::FunctionDecl &fd) {
+    return fd.getKind() == clang::Decl::CXXConstructor ||
+           fd.getKind() == clang::Decl::CXXDestructor;
+  };
+
+  if(fd.isImplicit() && !isContructorOrDestructor(fd))
     return false;
 
   // If the function is not defined but this is not the definition, skip it
@@ -793,7 +854,7 @@ bool clang_c_convertert::get_type(const clang::Type &the_type, typet &new_type)
     llvm::APInt val = arr.getSize();
     if(val.getBitWidth() > 64)
     {
-      msg.error(
+      log_error(
         "ESBMC currently does not support integers bigger "
         "than 64 bits");
       return true;
@@ -1064,7 +1125,6 @@ bool clang_c_convertert::get_type(const clang::Type &the_type, typet &new_type)
   case BITINT_TAG:
   {
     const BITINT_TYPE &eit = static_cast<const BITINT_TYPE &>(the_type);
-
     const unsigned n = eit.getNumBits();
     if(eit.isSigned())
       new_type = signedbv_typet(n);
@@ -1125,7 +1185,7 @@ bool clang_c_convertert::get_type(const clang::Type &the_type, typet &new_type)
     ross << the_type.getTypeClassName() << "\n";
     the_type.dump(ross, *ASTContext);
     ross.flush();
-    msg.error(oss.str());
+    log_error("{}", oss.str());
     return true;
   }
 
@@ -1264,7 +1324,7 @@ bool clang_c_convertert::get_builtin_type(
          << "\n";
     bt.dump(ross, *ASTContext);
     ross.flush();
-    msg.error(oss.str());
+    log_error("{}", oss.str());
     return true;
   }
   }
@@ -1432,12 +1492,12 @@ bool clang_c_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
     bool res = offset.EvaluateAsInt(result, *ASTContext);
     if(!res)
     {
-      msg.error("Clang could not calculate offset");
+      log_error("Clang could not calculate offset");
       std::ostringstream oss;
       llvm::raw_os_ostream ross(oss);
       offset.dump(ross, *ASTContext);
       ross.flush();
-      msg.error(oss.str());
+      log_error("{}", oss.str());
       return true;
     }
 
@@ -1573,14 +1633,14 @@ bool clang_c_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
     get_default_symbol(
       cl, get_modulename_from_path(path), t, cl.name, cl.id, location);
 
-    cl.static_lifetime = compound.isFileScope();
+    cl.static_lifetime = !current_block || compound.isFileScope();
     cl.is_extern = false;
     cl.file_local = true;
     cl.value = initializer;
 
     new_expr = symbol_expr(cl);
 
-    if(current_block)
+    if(!cl.static_lifetime)
     {
       /* The underlying storage is automatic here, i.e., local. In order for
        * it to be recognized as being local in ESBMC, it requires a declaration,
@@ -1592,10 +1652,6 @@ bool clang_c_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
     }
     else
     {
-      assert(cl.static_lifetime);
-      if(t.is_vector())
-        // Global vectors are compound operands that need to be early initialized
-        new_expr.swap(initializer);
       /* Symbols appearing in file scope do not need a declaration.
        * clang_c_main::static_lifetime_init() takes care of the initialization.
        */
@@ -2228,12 +2284,12 @@ bool clang_c_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
     }
     else
     {
-      msg.error("ESBMC currently does not support indirect gotos");
+      log_error("ESBMC currently does not support indirect gotos");
       std::ostringstream oss;
       llvm::raw_os_ostream ross(oss);
       stmt.dump(ross, *ASTContext);
       ross.flush();
-      msg.error(oss.str());
+      log_error("{}", oss.str());
       return true;
 
       exprt target;
@@ -2273,7 +2329,7 @@ bool clang_c_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
            << "\n";
       ret.dump(ross, *ASTContext);
       ross.flush();
-      msg.error(oss.str());
+      log_error("{}", oss.str());
       return true;
     }
 
@@ -2328,7 +2384,7 @@ bool clang_c_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
          << "\n";
     stmt.dump(ross, *ASTContext);
     ross.flush();
-    msg.error(oss.str());
+    log_error("{}", oss.str());
     return true;
   }
   }
@@ -2376,7 +2432,7 @@ bool clang_c_convertert::get_decl_ref(const clang::Decl &d, exprt &new_expr)
        << "\n";
   d.dump(ross);
   ross.flush();
-  msg.error(oss.str());
+  log_error("{}", oss.str());
   return true;
 }
 
@@ -2447,7 +2503,7 @@ bool clang_c_convertert::get_cast_expr(
          << "\n";
     cast.dump(ross, *ASTContext);
     ross.flush();
-    msg.error(oss.str());
+    log_error("{}", oss.str());
     return true;
   }
   }
@@ -2524,7 +2580,7 @@ bool clang_c_convertert::get_unary_operator_expr(
          << "\n";
     uniop.dump(ross, *ASTContext);
     ross.flush();
-    msg.error(oss.str());
+    log_error("{}", oss.str());
     return true;
   }
   }
@@ -2714,7 +2770,7 @@ bool clang_c_convertert::get_compound_assign_expr(
          << "\n";
     compop.dump(ross, *ASTContext);
     ross.flush();
-    msg.error(oss.str());
+    log_error("{}", oss.str());
     return true;
   }
   }
@@ -2875,12 +2931,12 @@ bool clang_c_convertert::get_atomic_expr(
     break;
 
   default:
-    msg.error("Unknown Atomic expression");
+    log_error("Unknown Atomic expression");
     std::ostringstream oss;
     llvm::raw_os_ostream ross(oss);
     atm.dump(ross, *ASTContext);
     ross.flush();
-    msg.error(oss.str());
+    log_error("{}", oss.str());
     return true;
   }
 
@@ -3060,7 +3116,7 @@ void clang_c_convertert::get_decl_name(
       llvm::raw_os_ostream ross(oss);
       nd.dump(ross);
       ross.flush();
-      msg.error(fmt::format("Declaration has an empty name:\n{}", oss.str()));
+      log_error("Declaration has an empty name:\n{}", oss.str());
       abort();
     }
   }
@@ -3078,7 +3134,7 @@ void clang_c_convertert::get_decl_name(
   ross << "Unable to generate the USR for:\n";
   nd.dump(ross);
   ross.flush();
-  msg.error(oss.str());
+  log_error("{}", oss.str());
   abort();
 }
 

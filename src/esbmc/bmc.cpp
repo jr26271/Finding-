@@ -1,12 +1,3 @@
-/*******************************************************************\
-
-Module: Symbolic Execution of ANSI-C
-
-Authors: Daniel Kroening, kroening@kroening.com
-         Lucas Cordeiro, lcc08r@ecs.soton.ac.uk
-
-\*******************************************************************/
-
 #include <csignal>
 #include <sys/types.h>
 
@@ -37,35 +28,28 @@ Authors: Daniel Kroening, kroening@kroening.com
 #include <util/i2string.h>
 #include <irep2/irep2.h>
 #include <util/location.h>
-#include <util/message/message_stream.h>
-#include <util/message/format.h>
+
 #include <util/migrate.h>
 #include <util/show_symbol_table.h>
 #include <util/time_stopping.h>
 
-bmct::bmct(
-  goto_functionst &funcs,
-  optionst &opts,
-  contextt &_context,
-  const messaget &_message_handler)
-  : options(opts), context(_context), ns(context), msg(_message_handler)
+bmct::bmct(goto_functionst &funcs, optionst &opts, contextt &_context)
+  : options(opts), context(_context), ns(context)
 {
   interleaving_number = 0;
   interleaving_failed = 0;
 
   if(options.get_bool_option("smt-during-symex"))
   {
-    runtime_solver =
-      std::shared_ptr<smt_convt>(create_solver("", ns, options, msg));
+    runtime_solver = std::shared_ptr<smt_convt>(create_solver("", ns, options));
 
     symex = std::make_shared<reachability_treet>(
       funcs,
       ns,
       options,
       std::shared_ptr<runtime_encoded_equationt>(
-        new runtime_encoded_equationt(ns, *runtime_solver, msg)),
-      _context,
-      _message_handler);
+        new runtime_encoded_equationt(ns, *runtime_solver)),
+      _context);
   }
   else
   {
@@ -73,10 +57,8 @@ bmct::bmct(
       funcs,
       ns,
       options,
-      std::shared_ptr<symex_target_equationt>(
-        new symex_target_equationt(ns, msg)),
-      _context,
-      _message_handler);
+      std::shared_ptr<symex_target_equationt>(new symex_target_equationt(ns)),
+      _context);
   }
 }
 
@@ -96,9 +78,9 @@ void bmct::successful_trace()
   if(witness_output != "")
   {
     goto_tracet goto_trace;
-    msg.status("Building successful trace");
+    log_status("Building successful trace");
     /* build_successful_goto_trace(eq, ns, goto_trace); */
-    correctness_graphml_goto_trace(options, ns, goto_trace, msg);
+    correctness_graphml_goto_trace(options, ns, goto_trace);
   }
 }
 
@@ -109,7 +91,7 @@ void bmct::error_trace(
   if(options.get_bool_option("result-only"))
     return;
 
-  msg.status("Building error trace");
+  log_status("Building error trace");
 
   bool is_compact_trace = true;
   if(
@@ -118,23 +100,23 @@ void bmct::error_trace(
     is_compact_trace = false;
 
   goto_tracet goto_trace;
-  build_goto_trace(eq, smt_conv, goto_trace, is_compact_trace, msg);
+  build_goto_trace(eq, smt_conv, goto_trace, is_compact_trace);
 
   std::string output_file = options.get_option("cex-output");
   if(output_file != "")
   {
     std::ofstream out(output_file);
-    show_goto_trace(out, ns, goto_trace, msg);
+    show_goto_trace(out, ns, goto_trace);
   }
 
   std::string witness_output = options.get_option("witness-output");
   if(witness_output != "")
-    violation_graphml_goto_trace(options, ns, goto_trace, msg);
+    violation_graphml_goto_trace(options, ns, goto_trace);
 
   std::ostringstream oss;
   oss << "\nCounterexample:\n";
-  show_goto_trace(oss, ns, goto_trace, msg);
-  msg.result(oss.str());
+  show_goto_trace(oss, ns, goto_trace);
+  log_result("{}", oss.str());
 }
 
 smt_convt::resultt bmct::run_decision_procedure(
@@ -152,17 +134,14 @@ smt_convt::resultt bmct::run_decision_procedure(
   else
     logic = "integer/real arithmetic";
 
-  msg.status(fmt::format("Encoding remaining VCC(s) using {}", logic));
+  log_status("Encoding remaining VCC(s) using {}", logic);
 
   fine_timet encode_start = current_time();
   do_cbmc(smt_conv, eq);
   fine_timet encode_stop = current_time();
 
-  std::ostringstream str;
-  str << "Encoding to solver time: ";
-  output_time(encode_stop - encode_start, str);
-  str << "s";
-  msg.status(str.str());
+  log_status(
+    "Encoding to solver time: {}s", time2string(encode_stop - encode_start));
 
   if(
     options.get_bool_option("smt-formula-too") ||
@@ -173,32 +152,27 @@ smt_convt::resultt bmct::run_decision_procedure(
       return smt_convt::P_SMTLIB;
   }
 
-  std::stringstream ss;
-  ss << "Solving with solver " << smt_conv->solver_text();
-  msg.status(ss.str());
+  log_status("Solving with solver {}", smt_conv->solver_text());
 
   fine_timet sat_start = current_time();
   smt_convt::resultt dec_result = smt_conv->dec_solve();
   fine_timet sat_stop = current_time();
 
   // output runtime
-  str.clear();
-  str << "\nRuntime decision procedure: ";
-  output_time(sat_stop - sat_start, str);
-  str << "s";
-  msg.status(str.str());
+  log_status(
+    "Runtime decision procedure: {}s", time2string(sat_stop - sat_start));
 
   return dec_result;
 }
 
 void bmct::report_success()
 {
-  msg.status("\nVERIFICATION SUCCESSFUL");
+  log_status("\nVERIFICATION SUCCESSFUL");
 }
 
 void bmct::report_failure()
 {
-  msg.status("\nVERIFICATION FAILED");
+  log_status("\nVERIFICATION FAILED");
 }
 
 void bmct::show_program(std::shared_ptr<symex_target_equationt> &eq)
@@ -206,9 +180,9 @@ void bmct::show_program(std::shared_ptr<symex_target_equationt> &eq)
   unsigned int count = 1;
   std::ostringstream oss;
   if(config.options.get_bool_option("ssa-symbol-table"))
-    ::show_symbol_table_plain(ns, oss, msg);
+    ::show_symbol_table_plain(ns, oss);
 
-  languagest languages(ns, language_idt::C, msg);
+  languagest languages(ns, language_idt::C);
 
   oss << "\nProgram constraints: \n";
 
@@ -245,7 +219,7 @@ void bmct::show_program(std::shared_ptr<symex_target_equationt> &eq)
     }
     else if(it.is_renumber())
     {
-      oss << "renumber: " << from_expr(ns, "", it.lhs, msg) << "\n";
+      oss << "renumber: " << from_expr(ns, "", it.lhs) << "\n";
     }
 
     if(!migrate_expr_back(it.guard).is_true())
@@ -258,7 +232,7 @@ void bmct::show_program(std::shared_ptr<symex_target_equationt> &eq)
     oss << '\n';
     count++;
   }
-  msg.status(oss.str());
+  log_status("{}", oss.str());
 }
 
 void bmct::report_trace(
@@ -319,7 +293,7 @@ void bmct::report_result(smt_convt::resultt &res)
     }
     else
     {
-      msg.status("No bug has been found in the base case");
+      log_status("No bug has been found in the base case");
     }
     break;
 
@@ -330,11 +304,11 @@ void bmct::report_result(smt_convt::resultt &res)
     }
     else if(fc)
     {
-      msg.status("The forward condition is unable to prove the property");
+      log_status("The forward condition is unable to prove the property");
     }
     else if(is)
     {
-      msg.status("The inductive step is unable to prove the property");
+      log_status("The inductive step is unable to prove the property");
     }
     break;
 
@@ -345,16 +319,16 @@ void bmct::report_result(smt_convt::resultt &res)
     return;
 
   default:
-    msg.error("SMT solver failed");
+    log_error("SMT solver failed");
     break;
   }
 
   if((interleaving_number > 0) && options.get_bool_option("all-runs"))
   {
-    msg.status(
+    log_status(
       "Number of generated interleavings: " +
       integer2string((interleaving_number)));
-    msg.status(
+    log_status(
       "Number of failed interleavings: " +
       integer2string((interleaving_failed)));
   }
@@ -381,8 +355,7 @@ smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
   do
   {
     if(++interleaving_number > 1)
-      msg.status(
-        fmt::format("*** Thread interleavings {} ***", interleaving_number));
+      log_status("Thread interleavings {}", interleaving_number);
 
     fine_timet bmc_start = current_time();
     res = run_thread(eq);
@@ -406,11 +379,7 @@ smt_convt::resultt bmct::run(std::shared_ptr<symex_target_equationt> &eq)
     }
     fine_timet bmc_stop = current_time();
 
-    std::ostringstream str;
-    str << "BMC program time: ";
-    output_time(bmc_stop - bmc_start, str);
-    str << "s";
-    msg.status(str.str());
+    log_status("BMC program time: {}s", time2string(bmc_stop - bmc_start));
 
     // Only run for one run
     if(options.get_bool_option("interactive-ileaves"))
@@ -458,7 +427,7 @@ void bmct::bidirectional_search(
     assert(fit != symex->goto_functions.function_map.end());
 
     // Find function loops
-    goto_loopst loops(f.function, symex->goto_functions, fit->second, msg);
+    goto_loopst loops(f.function, symex->goto_functions, fit->second);
 
     if(!loops.get_loops().size())
       continue;
@@ -500,8 +469,7 @@ void bmct::bidirectional_search(
         continue;
 
       expr2tc new_lhs = ssait.original_lhs;
-      renaming::renaming_levelt::get_original_name(
-        new_lhs, symbol2t::level0, msg);
+      renaming::renaming_levelt::get_original_name(new_lhs, symbol2t::level0);
 
       if(all_loop_vars.find(new_lhs) == all_loop_vars.end())
         continue;
@@ -521,8 +489,8 @@ void bmct::bidirectional_search(
       if(is_array_type(it.second.first) || is_pointer_type(it.second.first))
         return;
 
-      auto lhs = build_lhs(smt_conv, it.second.first, msg);
-      auto value = build_rhs(smt_conv, it.second.second, msg);
+      auto lhs = build_lhs(smt_conv, it.second.first);
+      auto value = build_rhs(smt_conv, it.second.second);
 
       // Add lhs and rhs to the list of new constraints
       equalities.push_back(equality2tc(lhs, value));
@@ -570,19 +538,19 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
 
   catch(std::string &error_str)
   {
-    msg.error(error_str);
+    log_error("{}", error_str);
     return smt_convt::P_ERROR;
   }
 
   catch(const char *error_str)
   {
-    msg.error(error_str);
+    log_error("{}", error_str);
     return smt_convt::P_ERROR;
   }
 
   catch(std::bad_alloc &)
   {
-    msg.error("Out of memory\n");
+    log_error("Out of memory\n");
     return smt_convt::P_ERROR;
   }
 
@@ -590,14 +558,10 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
 
   eq = std::dynamic_pointer_cast<symex_target_equationt>(result->target);
 
-  {
-    std::ostringstream str;
-    str << "Symex completed in: ";
-    output_time(symex_stop - symex_start, str);
-    str << "s";
-    str << " (" << eq->SSA_steps.size() << " assignments)";
-    msg.status(str.str());
-  }
+  log_status(
+    "Symex completed in: {}s ({} assignments)",
+    time2string(symex_stop - symex_start),
+    eq->SSA_steps.size());
 
   if(options.get_bool_option("double-assign-check"))
     eq->check_for_duplicate_assigns();
@@ -605,21 +569,14 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
   try
   {
     fine_timet slice_start = current_time();
-    BigInt ignored;
-    if(!options.get_bool_option("no-slice"))
-      ignored = slice(eq, options.get_bool_option("slice-assumes"));
-    else
-      ignored = simple_slice(eq);
+    BigInt ignored = slice(eq);
+
     fine_timet slice_stop = current_time();
 
-    {
-      std::ostringstream str;
-      str << "Slicing time: ";
-      output_time(slice_stop - slice_start, str);
-      str << "s";
-      str << " (removed " << ignored << " assignments)";
-      msg.status(str.str());
-    }
+    log_status(
+      "Slicing time: {}s (removed {} assignments)",
+      time2string(slice_stop - slice_start),
+      ignored);
 
     if(
       options.get_bool_option("program-only") ||
@@ -629,19 +586,17 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
     if(options.get_bool_option("program-only"))
       return smt_convt::P_SMTLIB;
 
-    {
-      std::ostringstream str;
-      str << "Generated " << result->total_claims << " VCC(s), ";
-      str << result->remaining_claims << " remaining after simplification ";
-      str << "(" << BigInt(eq->SSA_steps.size()) - ignored << " assignments)";
-      msg.status(str.str());
-    }
+    log_status(
+      "Generated {} VCC(s), {} remaining after simplification ({} assignments)",
+      result->total_claims,
+      result->remaining_claims,
+      BigInt(eq->SSA_steps.size()) - ignored);
 
     if(options.get_bool_option("document-subgoals"))
     {
       std::ostringstream oss;
       document_subgoals(*eq.get(), oss);
-      msg.status(oss.str());
+      log_status(oss.str());
       return smt_convt::P_SMTLIB;
     }
 
@@ -655,7 +610,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
     {
       if(options.get_bool_option("smt-formula-only"))
       {
-        msg.status(
+        log_status(
           "No VCC remaining, no SMT formula will be generated for"
           " this program\n");
         return smt_convt::P_SMTLIB;
@@ -667,7 +622,7 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
     if(!options.get_bool_option("smt-during-symex"))
     {
       runtime_solver =
-        std::shared_ptr<smt_convt>(create_solver("", ns, options, msg));
+        std::shared_ptr<smt_convt>(create_solver("", ns, options));
     }
 
     return run_decision_procedure(runtime_solver, eq);
@@ -675,19 +630,19 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
 
   catch(std::string &error_str)
   {
-    msg.error(error_str);
+    log_error("{}", error_str);
     return smt_convt::P_ERROR;
   }
 
   catch(const char *error_str)
   {
-    msg.error(error_str);
+    log_error("{}", error_str);
     return smt_convt::P_ERROR;
   }
 
   catch(std::bad_alloc &)
   {
-    msg.error("Out of memory\n");
+    log_error("Out of memory\n");
     return smt_convt::P_ERROR;
   }
 }

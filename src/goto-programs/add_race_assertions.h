@@ -1,13 +1,3 @@
-/*******************************************************************\
-
-Module: Race Detection for Threaded Goto Programs
-
-Author: Daniel Kroening
-
-Date: February 2006
-
-\*******************************************************************/
-
 #ifndef CPROVER_GOTO_PROGRAMS_RACE_DETECTION_H
 #define CPROVER_GOTO_PROGRAMS_RACE_DETECTION_H
 
@@ -18,13 +8,11 @@ Date: February 2006
 void add_race_assertions(
   value_setst &value_sets,
   contextt &context,
-  goto_programt &goto_program,
-  const messaget &msg);
+  goto_programt &goto_program);
 
 void add_race_assertions(
   value_setst &value_sets,
   contextt &context,
-  goto_functionst &goto_functions,
-  const messaget &msg);
+  goto_functionst &goto_functions);
 
 #endif

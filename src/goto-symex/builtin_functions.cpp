@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Symbolic Execution of ANSI-C
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <cassert>
 #include <complex>
 #include <functional>
@@ -23,6 +15,8 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <util/expr_util.h>
 #include <util/i2string.h>
 #include <irep2/irep2.h>
+#include <util/message.h>
+#include <util/message/format.h>
 #include <util/migrate.h>
 #include <util/prefix.h>
 #include <util/std_types.h>
@@ -448,8 +442,7 @@ void goto_symext::intrinsic_switch_to(
   const expr2tc &num = call.operands[0];
   if(!is_constant_int2t(num))
   {
-    msg.error(
-      fmt::format("Can't switch to non-constant thread id no\n{}", *num));
+    log_error("Can't switch to non-constant thread id no\n{}", *num);
     abort();
   }
 
@@ -501,7 +494,7 @@ void goto_symext::intrinsic_set_thread_data(
 
   if(!is_constant_int2t(threadid))
   {
-    msg.error("__ESBMC_set_start_data received nonconstant thread id");
+    log_error("__ESBMC_set_start_data received nonconstant thread id");
     abort();
   }
   unsigned int tid = to_constant_int2t(threadid).value.to_uint64();
@@ -522,7 +515,7 @@ void goto_symext::intrinsic_get_thread_data(
 
   if(!is_constant_int2t(threadid))
   {
-    msg.error("__ESBMC_get_start_data received nonconstant thread id");
+    log_error("__ESBMC_get_start_data received nonconstant thread id");
     abort();
   }
 
@@ -543,7 +536,7 @@ void goto_symext::intrinsic_spawn_thread(
     (k_induction || inductive_step) &&
     !options.get_bool_option("disable-inductive-step"))
   {
-    msg.warning(
+    log_warning(
       "WARNING: k-induction does not support concurrency yet. "
       "Disabling inductive step");
 
@@ -564,14 +557,13 @@ void goto_symext::intrinsic_spawn_thread(
     art.goto_functions.function_map.find(symname);
   if(it == art.goto_functions.function_map.end())
   {
-    msg.error(
-      fmt::format("Spawning thread \"{}{}", symname, "\": symbol not found"));
+    log_error("Spawning thread \"{}\": symbol not found", symname);
     abort();
   }
 
   if(!it->second.body_available)
   {
-    msg.error(fmt::format("Spawning thread \"{}{}", symname, "\": no body"));
+    log_error("Spawning thread \"{}\": no body", symname);
     abort();
   }
 
@@ -614,7 +606,7 @@ void goto_symext::intrinsic_get_thread_state(
 
   if(!is_constant_int2t(threadid))
   {
-    msg.error("__ESBMC_get_thread_state received nonconstant thread id");
+    log_error("__ESBMC_get_thread_state received nonconstant thread id");
     abort();
   }
 
@@ -677,7 +669,7 @@ void goto_symext::intrinsic_register_monitor(
 
   if(!is_constant_int2t(threadid))
   {
-    msg.error("__ESBMC_register_monitor received nonconstant thread id");
+    log_error("__ESBMC_register_monitor received nonconstant thread id");
     abort();
   }
 
@@ -1224,6 +1216,7 @@ void goto_symext::intrinsic_memset(
 
     if(!is_constant_int2t(item_offset))
     {
+
       /* If we reached here, item_offset is not symbolic
        * and we don't know what the actual value of it is...
        *

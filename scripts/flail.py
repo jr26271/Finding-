@@ -8,64 +8,87 @@ import sys
 import re
 import argparse
 import os
+import textwrap
 
 
 class Flail:
     """
-        The flaing consists in converting a file to a C header containing all the contents
-        as an uint array
+        The flailng generates the byte representation of the input file
+        by converting its content into a char array. The resulting array will be written in a *.c file.
+        The input file can be of any file type. For an input file of binary content, hexdump it
+        and you'll see the matching between the output and each element in the result array.
+        For input files that contain any text content, see example below:
 
         Example:
 
         Step 1: Object Dump
-
             #ifndef __ESBMC_HEADERS_STDARG_H_
             #define __ESBMC_HEADERS_STDARG_H_
             ...
-                    vvv
+            the byte representation of the above directives is:
+            (matching the ASCII code of each character)
+            ...
             0000000  35 105 102 110 100 101 102  32  95  95  69  83  66  77  67  95
             0000020  72  69  65  68  69  82  83  95  83  84  68  65  82  71  95  72
             0000040  95  13  10  35 100 101 102 105 110 101  32  95  95  69  83  66
-            ...
 
         Step 2: Remove Address header
+            ...
+            input:
+            ...
             0000000  35 105 102 110 100 101 102  32  95  95  69  83  66  77  67  95
             0000020  72  69  65  68  69  82  83  95  83  84  68  65  82  71  95  72
             0000040  95  13  10  35 100 101 102 105 110 101  32  95  95  69  83  66
             ...
-                    vvv
+            output:
+            ...
             35 105 102 110 100 101 102  32  95  95  69  83  66  77  67  95
             72  69  65  68  69  82  83  95  83  84  68  65  82  71  95  72
             95  13  10  35 100 101 102 105 110 101  32  95  95  69  83  66
 
         Step 3: Replace multiple spaces with a single-one
+            ...
+            input:
+            ...
             35 105 102 110 100 101 102  32  95  95  69  83  66  77  67  95
             72  69  65  68  69  82  83  95  83  84  68  65  82  71  95  72
             95  13  10  35 100 101 102 105 110 101  32  95  95  69  83  66
-                    vvv
+            ...
+            output:
+            ...
             35 105 102 110 100 101 102 32 95 95 69 83 66 77 67 95
             72 69 65 68 69 82 83 95 83 84 68 65 82 71 95 72
             95 13 10 35 100 101 102 105 110 101 32 95 95 69 83 66
 
         Step 4: Replace spaces with a comma
+            ...
+            input:
+            ...
             35 105 102 110 100 101 102 32 95 95 69 83 66 77 67 95
             72 69 65 68 69 82 83 95 83 84 68 65 82 71 95 72
             95 13 10 35 100 101 102 105 110 101 32 95 95 69 83 66
-                    vvv
+            ...
+            output:
+            ...
             35,105,102,110,100,101,102,32,95,95,69,83,66,77,67,95
             72,69,65,68,69,82,83,95,83,84,68,65,82,71,95,72
             95,13,10,35,100,101,102,105,110,101,32,95,95,69,83,66
 
         Step 5: Adds a comma at the end
+            ...
+            input:
+            ...
             35,105,102,110,100,101,102,32,95,95,69,83,66,77,67,95
             72,69,65,68,69,82,83,95,83,84,68,65,82,71,95,72
             95,13,10,35,100,101,102,105,110,101,32,95,95,69,83,66
-                    vvv
+            ...
+            output:
+            ...
             35,105,102,110,100,101,102,32,95,95,69,83,66,77,67,95,
             72,69,65,68,69,82,83,95,83,84,68,65,82,71,95,72,
             95,13,10,35,100,101,102,105,110,101,32,95,95,69,83,66,
 
-        Step 6: Create a C header
+        Step 6: Create a C header containing the output of Step 5 as a char array
         """
 
     REGEX_REMOVE_ADDR = re.compile(r'^[0-9]+( +)?')
@@ -73,11 +96,21 @@ class Flail:
     REGEX_ADD_COMMA_END = re.compile(r'.*[0-9]$')
 
     def __init__(self, filepath: str, prefix : str = ''):
-        WINDOWS = platform.system() == 'Windows'
-        self._cat = 'cat.exe' if WINDOWS else 'cat'
-        self._od = 'od.exe' if WINDOWS else 'od'
         self.filepath = filepath
         self.prefix = prefix
+
+    def custom_od(self):
+        '''
+        Generates octal representation of a file
+        '''
+        chars_per_line = 16
+        lines = []
+        with open(self.filepath, 'rb') as f:
+            for chunk in iter(lambda: f.read(chars_per_line), b''):
+                line = [ int(x,16) for x in chunk.hex(' ').split(' ')]
+                lines.append(' '.join(map(str, line)))
+        return lines
+
 
     def od_cli_command(self):
         return f'{self._od} -v -t u1 {self.filepath}'
@@ -121,14 +154,7 @@ class Flail:
                                                         self.filepath))
 
     def run(self, output_file, header = None, macro : str = None):
-        ps = subprocess.Popen(self.cat_cli_command().split(),
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        output = subprocess.check_output(self.od_cli_command().split(),
-                                         stdin=ps.stdout
-                                        ).decode().splitlines()
-
-        step_2 = [self._step_2(x) for x in output]
+        step_2 = self.custom_od()
         step_3_4 = [self._step_3_4(x) for x in step_2]
         step_5 = [self._step_5(x) for x in step_3_4]
 
@@ -136,11 +162,38 @@ class Flail:
 
 
 def parse_args(argv):
-    p = argparse.ArgumentParser(prog=argv[0])
+
+    p = argparse.ArgumentParser(prog=argv[0],
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            description=textwrap.dedent('''\
+            Try the following examples:
+
+            Ex.1 Convert a list of C operational models (see last line of the CMD below) into char arrays.
+                 Write the resulting array into libc.c and libc.h
+                 CMD:
+                    python3 flail.py \\
+                        --macro ESBMC_FLAIL \\
+                        --prefix esbmc_libc_ \\
+                        -o ./libc.c \\
+                        --header ./libc.h \\
+                        esbmc/src/c2goto/library/builtin_libs.c src/c2goto/library/ctype.c
+
+            Ex.2 Convert a goto binary file (see last line of the CMD below) into a char array
+                 After building ESBMC, find clib32.goto from the build tree
+                 CMD:
+                    python3 flail.py -o ./clib32.c \\
+                            esbmc/build/src/c2goto/clibd32.goto
+            NB:
+            --macro MACRO is only meaningful in combination with --header;
+            if specified, the header file will contain invocations of MACRO(body, size, fpath) for each input file where body is the name of
+            the extern char[] symbol defining the binary content of the input file, size is its size and fpath is the path to the input file as passed to this script.
+            If MACRO is not defined, the header will define it before the invocations to declare the body and size symbols as extern to facilitate usage
+            of the header in a C file
+            '''))
     p.add_argument('-p', '--prefix', type=str, default='',
                    help='prefix for C symbols (default: empty)')
     p.add_argument('--macro', type=str, default=None,
-                   help='print MACRO invocation to stdout')
+                   help='define MACRO in the header file (only meaningful in combination with --header)')
     p.add_argument('--header', type=str, default=None,
                    help='write header file containing "extern" declarations of '
                         'generated symbols')

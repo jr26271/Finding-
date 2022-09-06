@@ -1,14 +1,7 @@
-/*******************************************************************\
-
-Module: Solidity Language module
-
-Author: Kunjian Song, kunjian.song@postgrad.manchester.ac.uk
-
-\*******************************************************************/
-
 #include <solidity-frontend/solidity_grammar.h>
 #include <fmt/core.h>
 #include <set>
+#include <util/message.h>
 
 #define ENUM_TO_STR(s)                                                         \
   case s:                                                                      \
@@ -82,11 +75,11 @@ ContractBodyElementT get_contract_body_element_t(const nlohmann::json &element)
   }
   else
   {
-    assert(!((fmt::format(
-                "Got contract-body-element nodeType={}. Unsupported "
-                "contract-body-element type",
-                element["nodeType"].get<std::string>()))
-               .c_str()));
+    log_error(
+      "Got contract-body-element nodeType={}. Unsupported "
+      "contract-body-element type",
+      element["nodeType"].get<std::string>());
+    abort();
   }
   return ContractBodyElementTError;
 }
@@ -158,10 +151,10 @@ TypeNameT get_type_name_t(const nlohmann::json &type_name)
     }
     else
     {
-      assert(!((fmt::format(
-                  "Got type-name typeString={}. Unsupported type-name type",
-                  type_name["typeString"].get<std::string>()))
-                 .c_str()));
+      log_error(
+        "Got type-name typeString={}. Unsupported type-name type",
+        type_name["typeString"].get<std::string>());
+      abort();
     }
   }
   else
@@ -173,10 +166,10 @@ TypeNameT get_type_name_t(const nlohmann::json &type_name)
     }
     else
     {
-      assert(!((fmt::format(
-                  "Got type-name nodeType={}. Unsupported type-name type",
-                  type_name["nodeType"].get<std::string>()))
-                 .c_str()));
+      log_error(
+        "Got type-name nodeType={}. Unsupported type-name type",
+        type_name["nodeType"].get<std::string>());
+      abort();
     }
   }
 
@@ -241,12 +234,11 @@ ElementaryTypeNameT get_elementary_type_name_t(const nlohmann::json &type_name)
     return STRING;
   }
 
-  assert(!((fmt::format(
-              "Got elementary-type-name typeString={}. Unsupported "
-              "elementary-type-name type",
-              type_name["typeString"].get<std::string>()))
-             .c_str()));
-  return ElementaryTypeNameTError;
+  log_error(
+    "Got elementary-type-name typeString={}. Unsupported "
+    "elementary-type-name type",
+    type_name["typeString"].get<std::string>());
+  abort();
 }
 
 const char *elementary_type_name_to_str(ElementaryTypeNameT type)
@@ -379,10 +371,10 @@ BlockT get_block_t(const nlohmann::json &block)
   }
   else
   {
-    assert(!((fmt::format(
-                "Got block nodeType={}. Unsupported block type",
-                block["nodeType"].get<std::string>()))
-               .c_str()));
+    log_error(
+      "Got block nodeType={}. Unsupported block type",
+      block["nodeType"].get<std::string>());
+    abort();
   }
   return BlockTError;
 }
@@ -435,10 +427,10 @@ StatementT get_statement_t(const nlohmann::json &stmt)
   }
   else
   {
-    assert(!((fmt::format(
-                "Got statement nodeType={}. Unsupported statement type",
-                stmt["nodeType"].get<std::string>()))
-               .c_str()));
+    log_error(
+      "Got statement nodeType={}. Unsupported statement type",
+      stmt["nodeType"].get<std::string>());
+    abort();
   }
   return StatementTError;
 }
@@ -497,10 +489,10 @@ ExpressionT get_expression_t(const nlohmann::json &expr)
   }
   else
   {
-    assert(!((fmt::format(
-                "Got expression nodeType={}. Unsupported expression type",
-                expr["nodeType"].get<std::string>()))
-               .c_str()));
+    log_error(
+      "Got expression nodeType={}. Unsupported expression type",
+      expr["nodeType"].get<std::string>());
+    abort();
   }
   return ExpressionTError;
 }
@@ -525,12 +517,11 @@ ExpressionT get_unary_expr_operator_t(const nlohmann::json &expr, bool uo_pre)
   {
     return UO_Minus;
   }
-  assert(!((fmt::format(
-              "Got expression operator={}. Unsupported expression operator",
-              expr["operator"].get<std::string>()))
-             .c_str()));
+  log_error(
+    "Got expression operator={}. Unsupported expression operator",
+    expr["operator"].get<std::string>());
 
-  return ExpressionTError;
+  abort();
 }
 
 ExpressionT get_expr_operator_t(const nlohmann::json &expr)
@@ -573,10 +564,10 @@ ExpressionT get_expr_operator_t(const nlohmann::json &expr)
   }
   else
   {
-    assert(!((fmt::format(
-                "Got expression operator={}. Unsupported expression operator",
-                expr["operator"].get<std::string>()))
-               .c_str()));
+    log_error(
+      "Got expression operator={}. Unsupported expression operator",
+      expr["operator"].get<std::string>());
+    abort();
   }
 
   return ExpressionTError; // make some old compilers happy
@@ -624,11 +615,11 @@ VarDeclStmtT get_var_decl_stmt_t(const nlohmann::json &stmt)
   }
   else
   {
-    assert(!((fmt::format(
-                "Got expression nodeType={}. Unsupported "
-                "variable-declaration-statement operator",
-                stmt["nodeType"].get<std::string>()))
-               .c_str()));
+    log_error(
+      "Got expression nodeType={}. Unsupported "
+      "variable-declaration-statement operator",
+      stmt["nodeType"].get<std::string>());
+    abort();
   }
   return VarDeclStmtTError; // make some old compilers happy
 }
@@ -695,10 +686,8 @@ ImplicitCastTypeT get_implicit_cast_type_t(std::string cast)
   }
   else
   {
-    assert(
-      !((fmt::format(
-           "Got implicit cast type={}. Unsupported case type", cast.c_str()))
-          .c_str()));
+    log_error("Got implicit cast type={}. Unsupported case type", cast.c_str());
+    abort();
   }
 
   return ImplicitCastTypeTError; // to make some old compilers happy

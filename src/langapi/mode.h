@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module:
-
-Author: Daniel Kroening, kroening@cs.cmu.edu
-
-\*******************************************************************/
-
 #ifndef CPROVER_MODE_H
 #define CPROVER_MODE_H
 
@@ -13,7 +5,6 @@ Author: Daniel Kroening, kroening@cs.cmu.edu
 
 /* forward declarations */
 class languaget;
-class messaget;
 
 enum class language_idt : int
 {
@@ -40,7 +31,7 @@ language_idt language_id_by_path(const std::string &path);
 struct mode_table_et
 {
   language_idt language_id;
-  languaget *(*new_language)(const messaget &msg);
+  languaget *(*new_language)();
 };
 
 // List of language modes that are going to be supported in the final tool.
@@ -48,12 +39,12 @@ struct mode_table_et
 
 extern const mode_table_et mode_table[];
 
-languaget *new_clang_c_language(const messaget &msg);
-languaget *new_clang_cpp_language(const messaget &msg);
-languaget *new_jimple_language(const messaget &msg);
-languaget *new_ansi_c_language(const messaget &msg);
-languaget *new_cpp_language(const messaget &msg);
-languaget *new_solidity_language(const messaget &msg);
+languaget *new_clang_c_language();
+languaget *new_clang_cpp_language();
+languaget *new_jimple_language();
+languaget *new_ansi_c_language();
+languaget *new_cpp_language();
+languaget *new_solidity_language();
 
 // List of language entries, one can put in the mode table:
 #define LANGAPI_MODE_CLANG_C                                                   \
@@ -91,6 +82,6 @@ int get_mode(const std::string &str);
 int get_mode_filename(const std::string &filename);
 int get_old_frontend_mode(int current_mode);
 
-languaget *new_language(language_idt lang, const messaget &msg);
+languaget *new_language(language_idt lang);
 
 #endif

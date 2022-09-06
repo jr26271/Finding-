@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Symbolic Execution of ANSI-C
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <esbmc/bmc.h>
 #include <fmt/format.h>
 #include <fstream>
@@ -21,7 +13,7 @@ void bmct::show_vcc(
 {
   out << "\nVERIFICATION CONDITIONS:\n\n";
 
-  languagest languages(ns, language_idt::C, msg);
+  languagest languages(ns, language_idt::C);
 
   for(symex_target_equationt::SSA_stepst::iterator it = eq->SSA_steps.begin();
       it != eq->SSA_steps.end();
@@ -68,14 +60,14 @@ void bmct::show_vcc(std::shared_ptr<symex_target_equationt> &eq)
   {
     std::ostringstream oss;
     show_vcc(oss, eq);
-    msg.status(oss.str());
+    log_status("{}", oss.str());
   }
 
   else
   {
     std::ofstream out(filename.c_str());
     if(!out)
-      msg.error(fmt::format("failed to open {}", filename));
+      log_error("failed to open {}", filename);
     else
       show_vcc(out, eq);
   }

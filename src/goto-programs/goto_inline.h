@@ -1,17 +1,8 @@
-/*******************************************************************\
-
-Module: Function Inlining
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #ifndef CPROVER_GOTO_INLINE_H
 #define CPROVER_GOTO_INLINE_H
 
 #include <goto-programs/goto_functions.h>
 #include <unordered_set>
-#include <util/message/message_stream.h>
 #include <util/std_types.h>
 
 // do a full inlining
@@ -19,14 +10,12 @@ void goto_inline(
   goto_functionst &goto_functions,
   optionst &options,
   const namespacet &ns,
-  goto_programt &dest,
-  const messaget &message_handler);
+  goto_programt &dest);
 
 void goto_inline(
   goto_functionst &goto_functions,
   optionst &options,
-  const namespacet &ns,
-  const messaget &message_handler);
+  const namespacet &ns);
 
 // inline those functions marked as "inlined"
 // and functions with less than _smallfunc_limit instructions
@@ -34,19 +23,16 @@ void goto_partial_inline(
   goto_functionst &goto_functions,
   optionst &options,
   const namespacet &ns,
-  const messaget &message_handler,
   unsigned _smallfunc_limit = 0);
 
-class goto_inlinet : public message_streamt
+class goto_inlinet
 {
 public:
   goto_inlinet(
     goto_functionst &_goto_functions,
     optionst &_options,
-    const namespacet &_ns,
-    const messaget &_message_handler)
-    : message_streamt(_message_handler),
-      smallfunc_limit(0),
+    const namespacet &_ns)
+    : smallfunc_limit(0),
       goto_functions(_goto_functions),
       options(_options),
       ns(_ns)

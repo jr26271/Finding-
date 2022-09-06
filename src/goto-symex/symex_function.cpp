@@ -1,12 +1,3 @@
-/*******************************************************************\
-
-   Module: Symbolic Execution of ANSI-C
-
-   Author: Daniel Kroening, kroening@kroening.com Lucas Cordeiro,
-     lcc08r@ecs.soton.ac.uk
-
-\*******************************************************************/
-
 #include <algorithm>
 #include <cassert>
 #include <goto-symex/execution_state.h>
@@ -37,9 +28,8 @@ bool goto_symext::get_unwind_recursion(
       (k_induction || inductive_step) &&
       !options.get_bool_option("disable-inductive-step"))
     {
-      msg.warning(
-        "**** WARNING: k-induction does not support recursion yet. "
-        "Disabling inductive step");
+      log_warning(
+        "k-induction does not support recursion yet. Disabling inductive step");
 
       // Disable inductive step on recursion
       options.set_option("disable-inductive-step", true);
@@ -53,7 +43,7 @@ bool goto_symext::get_unwind_recursion(
     if(this_loop_max_unwind != 0)
       msg += " (" + integer2string(this_loop_max_unwind) + " max)";
 
-    this->msg.status(msg);
+    log_status("{}", msg);
   }
 
   return this_loop_max_unwind != 0 && unwind >= this_loop_max_unwind;
@@ -108,11 +98,11 @@ unsigned goto_symext::argument_assignments(
         }
         else
         {
-          std::ostringstream oss;
-          oss << "function call: argument \"" << id2string(identifier)
-              << "\" type mismatch: got " << get_type_id((*it1)->type)
-              << ", expected " << get_type_id(arg_type) << '\n';
-          msg.error(oss.str());
+          log_error(
+            "function call: argument \"{}\" type mismatch: got {}, expected {}",
+            id2string(identifier),
+            get_type_id((*it1)->type),
+            get_type_id(arg_type));
           abort();
         }
       }
@@ -153,7 +143,7 @@ unsigned goto_symext::argument_assignments(
 
       if(new_context.move(symbol))
       {
-        msg.error("Couldn't add new va_arg symbol");
+        log_error("Couldn't add new va_arg symbol");
         abort();
       }
       // 'Declare' the argument before assigning a value to it
@@ -198,14 +188,14 @@ void goto_symext::symex_function_call_code(const expr2tc &expr)
   {
     if(has_prefix(identifier.as_string(), "symex::invalid_object"))
     {
-      msg.warning("WARNING: function ptr call with no target, ");
+      log_warning("WARNING: function ptr call with no target, ");
       cur_state->source.pc++;
       return;
     }
 
-    msg.error(
-      "failed to find `" + get_pretty_name(identifier.as_string()) +
-      "' in function_map");
+    log_error(
+      "failed to find `{}' in function_map",
+      get_pretty_name(identifier.as_string()));
     abort();
   }
 
@@ -234,9 +224,8 @@ void goto_symext::symex_function_call_code(const expr2tc &expr)
 
   if(!goto_function.body_available)
   {
-    msg.warning(fmt::format(
-      "**** WARNING: no body for function {}",
-      get_pretty_name(identifier.as_string())));
+    log_warning(
+      "no body for function {}", get_pretty_name(identifier.as_string()));
 
     /* TODO: if it is a C function with no prototype, assert/claim that all
      *       calls to this function have the same number of parameters and that
@@ -300,7 +289,7 @@ void goto_symext::symex_function_call_code(const expr2tc &expr)
 }
 
 static std::list<std::pair<guardt, symbol2tc>>
-get_function_list(const expr2tc &expr, const messaget &msg)
+get_function_list(const expr2tc &expr)
 {
   std::list<std::pair<guardt, symbol2tc>> l;
 
@@ -312,11 +301,11 @@ get_function_list(const expr2tc &expr, const messaget &msg)
     not2tc notguardexpr(guardexpr);
 
     // Get sub items, them iterate over adding the relevant guard
-    l1 = get_function_list(ifexpr.true_value, msg);
+    l1 = get_function_list(ifexpr.true_value);
     for(auto &it : l1)
       it.first.add(guardexpr);
 
-    l2 = get_function_list(ifexpr.false_value, msg);
+    l2 = get_function_list(ifexpr.false_value);
     for(auto &it : l2)
       it.first.add(notguardexpr);
 
@@ -334,12 +323,10 @@ get_function_list(const expr2tc &expr, const messaget &msg)
   }
 
   if(is_typecast2t(expr))
-    return get_function_list(to_typecast2t(expr).from, msg);
+    return get_function_list(to_typecast2t(expr).from);
 
-  msg.error(fmt::format(
-    "Unexpected irep id {} {}",
-    get_expr_id(expr),
-    " in function ptr dereference"));
+  log_error(
+    "Unexpected irep id {} in function ptr dereference", get_expr_id(expr));
   // So, the function may point at something invalid. If that's the case,
   // wait for a solve-time pointer validity assertion to detect that. Return
   // nothing to call right now.
@@ -357,10 +344,8 @@ void goto_symext::symex_function_call_deref(const expr2tc &expr)
   // merge.
   if(is_nil_expr(call.function))
   {
-    std::ostringstream oss;
-    oss << "Function pointer call with no targets; irep: ";
-    oss << call.pretty(0) << "\n";
-    msg.error(oss.str());
+    log_error(
+      "Function pointer call with no targets; irep: {}", call.pretty(0));
     abort();
   }
 
@@ -379,14 +364,14 @@ void goto_symext::symex_function_call_deref(const expr2tc &expr)
   {
     // Emit warning; perform no function call behaviour. Increment PC
     // XXX jmorse - no location information any more.
-    msg.status(fmt::format(
+    log_status(
       "No target candidate for function call {}",
-      from_expr(ns, "", call.function, msg)));
+      from_expr(ns, "", call.function));
     cur_state->source.pc++;
     return;
   }
 
-  std::list<std::pair<guardt, symbol2tc>> l = get_function_list(func_ptr, msg);
+  std::list<std::pair<guardt, symbol2tc>> l = get_function_list(func_ptr);
 
   /* Internal check that all symbols are actually of 'code' type (modulo the
    * guard) */
@@ -395,14 +380,16 @@ void goto_symext::symex_function_call_deref(const expr2tc &expr)
     const symbol2tc &sym = elem.second;
     if(!guard.is_false() && !is_code_type(sym))
     {
-      bool known_called = guard.is_true();
-      msg.print(
-        known_called ? VerbosityLevel::Error : VerbosityLevel::Status,
-        fmt::format(
+      if(guard.is_true())
+      {
+        log_error(
           "non-code call target '{}' generated at {}",
-          sym->thename.as_string()));
-      if(known_called)
+          sym->thename.as_string());
         return false;
+      }
+
+      log_status(
+        "non-code call target '{}' generated at {}", sym->thename.as_string());
     }
     return true;
   };
@@ -419,8 +406,7 @@ void goto_symext::symex_function_call_deref(const expr2tc &expr)
 
     if(fit == goto_functions.function_map.end() || !fit->second.body_available)
     {
-      msg.warning(
-        fmt::format("**** WARNING: no body for function {}", pretty_name));
+      log_warning("no body for function {}", pretty_name);
 
       continue; // XXX, find out why this fires on SV-COMP 14 benchmark
       // 32_7a_cilled_true_linux-3.8-rc1-drivers--ata--pata_legacy.ko-main.cil.out.c
@@ -435,7 +421,7 @@ void goto_symext::symex_function_call_deref(const expr2tc &expr)
     cur_state->top().cur_function_ptr_targets.emplace_back(
       fit->second.body.instructions.begin(), it.second);
 
-    goto_state_list.emplace_back(*cur_state, msg);
+    goto_state_list.emplace_back(*cur_state);
     statet::goto_statet &new_state = goto_state_list.back();
     expr2tc guardexpr = it.first.as_expr();
     cur_state->rename(guardexpr);
@@ -468,7 +454,7 @@ bool goto_symext::run_next_function_ptr_target(bool first)
     statet::goto_state_listt &goto_state_list =
       cur_state->top()
         .goto_state_map[cur_state->top().function_ptr_combine_target];
-    goto_state_list.emplace_back(*cur_state, msg);
+    goto_state_list.emplace_back(*cur_state);
   }
 
   // Take one function ptr target out of the list and jump to it. A previously
@@ -579,7 +565,7 @@ bool goto_symext::make_return_assignment(expr2tc &assign, const expr2tc &code)
   }
   else if(!is_nil_expr(frame.return_value))
   {
-    msg.error("return with unexpected value");
+    log_error("return with unexpected value");
     abort();
   }
 
@@ -595,7 +581,7 @@ void goto_symext::symex_return(const expr2tc &code)
   statet::goto_state_listt &goto_state_list =
     cur_state->top().goto_state_map[cur_state->top().end_of_function];
 
-  goto_state_list.emplace_back(*cur_state, msg);
+  goto_state_list.emplace_back(*cur_state);
 
   // check whether the stack limit and return
   // value optimization have been activated.

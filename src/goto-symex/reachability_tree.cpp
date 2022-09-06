@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module:
-
-Author: Lucas Cordeiro, lcc08r@ecs.soton.ac.uk
-
-\*******************************************************************/
-
 /* Byte order includes, for context switch checkpoint files */
 #ifndef _WIN32
 #include <arpa/inet.h>
@@ -21,7 +13,7 @@ Author: Lucas Cordeiro, lcc08r@ecs.soton.ac.uk
 #include <util/crypto_hash.h>
 #include <util/expr_util.h>
 #include <util/i2string.h>
-#include <util/message/message.h>
+#include <util/message.h>
 #include <util/std_expr.h>
 
 reachability_treet::reachability_treet(
@@ -29,13 +21,11 @@ reachability_treet::reachability_treet(
   const namespacet &ns,
   optionst &opts,
   std::shared_ptr<symex_targett> target,
-  contextt &context,
-  const messaget &_message_handler)
+  contextt &context)
   : goto_functions(goto_functions),
     permanent_context(context),
     ns(ns),
-    options(opts),
-    message_handler(_message_handler)
+    options(opts)
 {
   // Put a few useful symbols in the symbol table.
   symbolt sym;
@@ -76,20 +66,13 @@ void reachability_treet::setup_for_new_explore()
       permanent_context,
       options,
       &schedule_total_claims,
-      &schedule_remaining_claims,
-      message_handler));
+      &schedule_remaining_claims));
   }
   else
   {
     targ = target_template->clone();
     s = reinterpret_cast<execution_statet *>(new dfs_execution_statet(
-      goto_functions,
-      ns,
-      this,
-      targ,
-      permanent_context,
-      options,
-      message_handler));
+      goto_functions, ns, this, targ, permanent_context, options));
     schedule_target = nullptr;
   }
 
@@ -206,8 +189,7 @@ reachability_treet::decide_ileave_direction(execution_statet &ex_state)
 
   if(interactive_ileaves && tid != user_tid)
   {
-    message_handler.error(
-      "Ileave code selected different thread from user choice");
+    log_error("Ileave code selected different thread from user choice");
     abort();
   }
 
@@ -341,19 +323,16 @@ reachability_treet::dfs_position::dfs_position(const reachability_treet &rt)
   ileaves = 0;  // Can use this depending on a future refactor.
 }
 
-reachability_treet::dfs_position::dfs_position(
-  const std::string &&filename,
-  const messaget &msg)
+reachability_treet::dfs_position::dfs_position(const std::string &&filename)
 {
-  read_from_file(std::move(filename), msg);
+  read_from_file(std::move(filename));
 }
 
 const uint32_t reachability_treet::dfs_position::file_magic =
   0x4543484B; //'ECHK'
 
 bool reachability_treet::dfs_position::write_to_file(
-  const std::string &&filename,
-  const messaget &msg) const
+  const std::string &&filename) const
 {
   uint8_t buffer[8192];
   reachability_treet::dfs_position::file_hdr hdr;
@@ -366,7 +345,7 @@ bool reachability_treet::dfs_position::write_to_file(
   f = fopen(filename.c_str(), "wb");
   if(f == nullptr)
   {
-    msg.error("Couldn't open checkpoint output file");
+    log_error("Couldn't open checkpoint output file");
     return true;
   }
 
@@ -414,14 +393,13 @@ bool reachability_treet::dfs_position::write_to_file(
   return false;
 
 fail:
-  msg.error("Write error writing checkpoint file");
+  log_error("Write error writing checkpoint file");
   fclose(f);
   return true;
 }
 
 bool reachability_treet::dfs_position::read_from_file(
-  const std::string &&filename,
-  const messaget &msg)
+  const std::string &&filename)
 {
   reachability_treet::dfs_position::file_hdr hdr;
   reachability_treet::dfs_position::file_entry entry;
@@ -432,7 +410,7 @@ bool reachability_treet::dfs_position::read_from_file(
   f = fopen(filename.c_str(), "rb");
   if(f == nullptr)
   {
-    msg.error("Couldn't open checkpoint input file");
+    log_error("Couldn't open checkpoint input file");
     return true;
   }
 
@@ -441,7 +419,7 @@ bool reachability_treet::dfs_position::read_from_file(
 
   if(hdr.magic != htonl(file_magic))
   {
-    msg.error("Magic number indicates that this isn't a checkpoint file");
+    log_error("Magic number indicates that this isn't a checkpoint file");
     fclose(f);
     return true;
   }
@@ -459,7 +437,7 @@ bool reachability_treet::dfs_position::read_from_file(
     assert(state.num_threads < 65536);
     if(state.cur_thread >= state.num_threads)
     {
-      msg.error("Inconsistent checkpoint data");
+      log_error("Inconsistent checkpoint data");
       fclose(f);
       return true;
     }
@@ -482,7 +460,7 @@ bool reachability_treet::dfs_position::read_from_file(
   return false;
 
 fail:
-  msg.error("Read error on checkpoint file");
+  log_error("Read error on checkpoint file");
   fclose(f);
   return true;
 }
@@ -492,10 +470,10 @@ void reachability_treet::print_ileave_trace() const
   std::list<std::shared_ptr<execution_statet>>::const_iterator it;
   int i = 0;
 
-  message_handler.status("Context switch trace for interleaving:");
+  log_status("Context switch trace for interleaving:");
   for(it = execution_states.begin(); it != execution_states.end(); it++, i++)
   {
-    message_handler.status(fmt::format("Context switch point {}", i));
+    log_status("Context switch point {}", i);
     (*it)->print_stack_traces(4);
   }
 }
@@ -507,29 +485,28 @@ bool reachability_treet::check_thread_viable(unsigned int tid, bool quiet) const
   if(ex.DFS_traversed.at(tid) == true)
   {
     if(!quiet)
-      message_handler.status(
-        "Thread unschedulable as it's already been explored");
+      log_status("Thread unschedulable as it's already been explored");
     return false;
   }
 
   if(ex.threads_state.at(tid).call_stack.empty())
   {
     if(!quiet)
-      message_handler.status("Thread unschedulable due to empty call stack");
+      log_status("Thread unschedulable due to empty call stack");
     return false;
   }
 
   if(ex.threads_state.at(tid).thread_ended)
   {
     if(!quiet)
-      message_handler.status("That thread has ended");
+      log_status("That thread has ended");
     return false;
   }
 
 #if 0
   if (por && !ex.is_thread_mpor_schedulable(tid)) {
     if (!quiet)
-      message_handler.status("Thread unschedulable due to POR");
+      log_status("Thread unschedulable due to POR");
     return false;
   }
 #endif
@@ -537,7 +514,7 @@ bool reachability_treet::check_thread_viable(unsigned int tid, bool quiet) const
   if(ex.tid_is_set && ex.monitor_tid == tid)
   {
     if(!quiet)
-      message_handler.status("Can't context switch to a monitor thread");
+      log_status("Can't context switch to a monitor thread");
     return false;
   }
 
@@ -670,7 +647,7 @@ bool reachability_treet::restore_from_dfs_state(void *)
 
     if (get_cur_state().threads_state.size() != it->num_threads)
 {
-msg.error("Unexpected number of threads when reexploring checkpoint");
+log_error("Unexpected number of threads when reexploring checkpoint");
 abort();
 }
 
@@ -684,7 +661,7 @@ abort();
 #if 0
     if (get_cur_state().get_active_state().source.pc->location_number !=
         it->location_number) {
-msg.error("Interleave at unexpected location when restoring checkpoint").
+log_error("Interleave at unexpected location when restoring checkpoint").
 abort();
 }
 #endif
@@ -698,7 +675,7 @@ void reachability_treet::save_checkpoint(const std::string &&) const
 #if 0
   reachability_treet::dfs_position pos(*this);
   if (pos.write_to_file(fname))
-    message_handler.error("Couldn't save checkpoint; continuing" << "\n");
+    log_error("Couldn't save checkpoint; continuing");
 #endif
 
   abort();

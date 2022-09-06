@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Interval Domain
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 /// \file
 /// Interval Domain
 
@@ -15,7 +7,6 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <util/c_typecast.h>
 #include <util/simplify_expr.h>
 #include <util/std_expr.h>
-#include <util/message/default_message.h>
 
 void interval_domaint::output(std::ostream &out) const
 {
@@ -310,10 +301,9 @@ void interval_domaint::assume_rec(const expr2tc &cond, bool negation)
 
 void interval_domaint::dump() const
 {
-  default_message msg;
   std::ostringstream oss;
   output(oss);
-  msg.debug(oss.str());
+  log_debug("{}", oss.str());
 }
 expr2tc interval_domaint::make_expression(const expr2tc &expr) const
 {

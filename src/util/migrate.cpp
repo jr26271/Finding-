@@ -1,13 +1,12 @@
 #include <util/c_types.h>
 #include <util/config.h>
 #include <irep2/irep2_utils.h>
+#include <util/message/format.h>
 #include <util/migrate.h>
 #include <util/namespace.h>
 #include <util/prefix.h>
 #include <util/simplify_expr.h>
 #include <util/type_byte_size.h>
-#include <util/message/format.h>
-#include <message/default_message.h>
 
 // File for old irep -> new irep conversions.
 
@@ -112,6 +111,13 @@ type2tc migrate_type(const typet &type)
   {
     type2tc subtype = migrate_type(type.subtype());
     expr2tc size((expr2t *)nullptr);
+
+    assert(
+      (type.find(typet::a_size).id() != "infinity") &&
+      "Vector type has a constant size\n"
+      "Please, refer to: "
+      "https://clang.llvm.org/docs/"
+      "LanguageExtensions.html#vectors-and-extended-vectors");
 
     exprt sz = (exprt &)type.find(typet::a_size);
     simplify(sz);
@@ -319,8 +325,8 @@ type2tc migrate_type(const typet &type)
     unsigned int iwidth = strtol(width.as_string().c_str(), nullptr, 10);
     return type2tc(new string_type2t(iwidth));
   }
-  default_message msg;
-  msg.error(fmt::format("{}", type));
+
+  log_error("{}", type);
   abort();
 }
 
@@ -1622,9 +1628,8 @@ void migrate_expr(const exprt &expr, expr2tc &new_expr_ref)
     }
     else
     {
-      assert(
-        0 && fmt::format("Unexpected side-effect statement: ", expr.statement())
-               .c_str());
+      log_error("Unexpected side-effect statement: {}", expr.statement());
+      abort();
     }
 
     new_expr_ref =
@@ -1854,8 +1859,7 @@ void migrate_expr(const exprt &expr, expr2tc &new_expr_ref)
   }
   else
   {
-    default_message msg;
-    msg.error(fmt::format("{}\nmigrate expr failed", expr));
+    log_error("{}\nmigrate expr failed", expr);
     abort();
   }
 }
@@ -2046,8 +2050,8 @@ typet migrate_type_back(const type2tc &ref)
     return ret;
   }
   default:
-    default_message msg;
-    msg.error("Unrecognized type in migrate_type_back");
+
+    log_error("Unrecognized type in migrate_type_back");
     abort();
   }
 }
@@ -2672,8 +2676,7 @@ exprt migrate_expr_back(const expr2tc &ref)
     }
     else
     {
-      default_message msg;
-      msg.error("Invalid operand to overflow2t when backmigrating");
+      log_error("Invalid operand to overflow2t when backmigrating");
       abort();
     }
     return theexpr;
@@ -2845,8 +2848,8 @@ exprt migrate_expr_back(const expr2tc &ref)
       theexpr.statement("postdecrement");
       break;
     default:
-      default_message msg;
-      msg.error("Unexpected side effect type when back-converting");
+
+      log_error("Unexpected side effect type when back-converting");
       abort();
     }
 
@@ -3076,8 +3079,8 @@ exprt migrate_expr_back(const expr2tc &ref)
     return back;
   }
   default:
-    default_message msg;
-    msg.error("Unrecognized expr in migrate_expr_back");
+
+    log_error("Unrecognized expr in migrate_expr_back");
     abort();
   }
 }

@@ -2,10 +2,10 @@
 #define UTIL_IREP2_UTILS_H_
 
 #include <util/c_types.h>
-#include <util/message/default_message.h>
-#include <util/message/format.h>
+
 #include <irep2/irep2_expr.h>
 #include <util/migrate.h>
+#include <util/message.h>
 
 std::string indent_str_irep2(unsigned int indent);
 
@@ -362,8 +362,7 @@ inline expr2tc gen_zero(const type2tc &type, bool array_as_array_of = false)
     break;
   }
 
-  default_message msg;
-  msg.error(fmt::format("Can't generate zero for type {}", get_type_id(type)));
+  log_error("Can't generate zero for type {}", get_type_id(type));
   abort();
 }
 
@@ -396,8 +395,7 @@ inline expr2tc gen_one(const type2tc &type)
     break;
   }
 
-  default_message msg;
-  msg.error(fmt::format("Can't generate one for type {}", get_type_id(type)));
+  log_error("Can't generate one for type {}", get_type_id(type));
   abort();
 }
 
@@ -410,10 +408,8 @@ inline expr2tc gen_one(const type2tc &type)
    * @param op2 the second operand
    * @return expr2tc with the resulting vector
    */
-inline expr2tc distribute_vector_operation(
-  std::function<expr2tc(type2tc, expr2tc, expr2tc)> func,
-  expr2tc op1,
-  expr2tc op2)
+template <typename Func>
+inline expr2tc distribute_vector_operation(Func func, expr2tc op1, expr2tc op2)
 {
   assert(is_constant_vector2t(op1) || is_constant_vector2t(op2));
   /*

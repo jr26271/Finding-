@@ -15,30 +15,21 @@ Author: Daniel Kroening, kroening@kroening.com
 class ansi_c_languaget : public languaget
 {
 public:
-  virtual bool preprocess(
-    const std::string &path,
-    std::ostream &outstream,
-    const messaget &message_handler);
+  virtual bool preprocess(const std::string &path, std::ostream &outstream);
 
-  bool parse(const std::string &path, const messaget &message_handler) override;
+  bool parse(const std::string &path) override;
 
-  bool typecheck(
-    contextt &context,
-    const std::string &module,
-    const messaget &message_handler) override;
+  bool typecheck(contextt &context, const std::string &module) override;
 
-  bool final(contextt &context, const messaget &message_handler) override;
+  bool final(contextt &context) override;
 
-  virtual bool merge_context(
-    contextt &dest,
-    contextt &src,
-    const messaget &message_handler,
-    const std::string &module) const;
+  virtual bool
+  merge_context(contextt &dest, contextt &src, const std::string &module) const;
 
   void show_parse(std::ostream &out) override;
 
   ~ansi_c_languaget() override = default;
-  explicit ansi_c_languaget(const messaget &msg);
+  explicit ansi_c_languaget();
 
   // conversion from expression into string
   bool from_expr(const exprt &expr, std::string &code, const namespacet &ns)
@@ -48,9 +39,9 @@ public:
   bool from_type(const typet &type, std::string &code, const namespacet &ns)
     override;
 
-  languaget *new_language(const messaget &msg) const override
+  languaget *new_language() const override
   {
-    return new ansi_c_languaget(msg);
+    return new ansi_c_languaget();
   }
 
   std::string id() const override
@@ -63,6 +54,6 @@ protected:
   std::string parse_path;
 };
 
-languaget *new_ansi_c_language(const messaget &msg);
+languaget *new_ansi_c_language();
 
 #endif

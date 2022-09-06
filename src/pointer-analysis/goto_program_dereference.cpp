@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Dereferencing Operations on GOTO Programs
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <pointer-analysis/goto_program_dereference.h>
 #include <util/base_type.h>
 #include <irep2/irep2.h>
@@ -234,13 +226,12 @@ void remove_pointers(
   goto_programt &goto_program,
   contextt &context,
   const optionst &options,
-  value_setst &value_sets,
-  const messaget &msg)
+  value_setst &value_sets)
 {
   namespacet ns(context);
 
   goto_program_dereferencet goto_program_dereference(
-    ns, context, options, value_sets, msg);
+    ns, context, options, value_sets);
 
   goto_program_dereference.dereference_program(goto_program);
 }
@@ -249,13 +240,12 @@ void remove_pointers(
   goto_functionst &goto_functions,
   contextt &context,
   const optionst &options,
-  value_setst &value_sets,
-  const messaget &msg)
+  value_setst &value_sets)
 {
   namespacet ns(context);
 
   goto_program_dereferencet goto_program_dereference(
-    ns, context, options, value_sets, msg);
+    ns, context, options, value_sets);
 
   Forall_goto_functions(it, goto_functions)
     goto_program_dereference.dereference_program(it->second.body);
@@ -265,12 +255,11 @@ void pointer_checks(
   goto_programt &goto_program,
   const namespacet &ns,
   const optionst &options,
-  value_setst &value_sets,
-  const messaget &msg)
+  value_setst &value_sets)
 {
-  contextt new_context(msg);
+  contextt new_context;
   goto_program_dereferencet goto_program_dereference(
-    ns, new_context, options, value_sets, msg);
+    ns, new_context, options, value_sets);
   goto_program_dereference.pointer_checks(goto_program);
 }
 
@@ -279,11 +268,10 @@ void pointer_checks(
   const namespacet &ns,
   contextt &context,
   const optionst &options,
-  value_setst &value_sets,
-  const messaget &msg)
+  value_setst &value_sets)
 {
   goto_program_dereferencet goto_program_dereference(
-    ns, context, options, value_sets, msg);
+    ns, context, options, value_sets);
   goto_program_dereference.pointer_checks(goto_functions);
 }
 
@@ -291,13 +279,12 @@ void dereference(
   goto_programt::const_targett target,
   expr2tc &expr,
   const namespacet &ns,
-  value_setst &value_sets,
-  const messaget &msg)
+  value_setst &value_sets)
 {
   optionst options;
-  contextt new_context(msg);
+  contextt new_context;
   goto_program_dereferencet goto_program_dereference(
-    ns, new_context, options, value_sets, msg);
+    ns, new_context, options, value_sets);
 
   goto_program_dereference.dereference_expression(target, expr);
 }

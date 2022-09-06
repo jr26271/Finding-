@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Symbolic Execution of ANSI-C
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <cassert>
 #include <langapi/language_util.h>
 #include <pointer-analysis/dereference.h>
@@ -22,6 +14,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <util/expr_util.h>
 #include <util/i2string.h>
 #include <irep2/irep2.h>
+#include <util/message/format.h>
 #include <util/migrate.h>
 #include <util/prefix.h>
 #include <util/pretty.h>
@@ -417,10 +410,10 @@ expr2tc dereferencet::dereference_expr_nonscalar(
       !is_aligned_member(expr))
     {
       auto *t = static_cast<const struct_union_data *>(structure->type.get());
-      msg.warning(fmt::format(
+      log_warning(
         "WARNING: not checking alignment for access to packed {} {}",
         get_type_id(*structure->type),
-        t->name.as_string()));
+        t->name.as_string());
       mode.unaligned = true;
     }
     return dereference_expr_nonscalar(structure, guard, mode, base);
@@ -637,7 +630,7 @@ expr2tc dereferencet::build_reference_to(
 
   if(!is_object_descriptor2t(what))
   {
-    msg.error(fmt::format("unknown points-to: {}", get_expr_id(what)));
+    log_error("unknown points-to: {}", get_expr_id(what));
     abort();
   }
 
@@ -846,18 +839,14 @@ void dereferencet::build_reference_rec(
     flags |= flag_dst_scalar;
   else if(is_array_type(type) || is_string_type(type))
   {
-    std::ostringstream oss;
-    oss << "Can't construct rvalue reference to array type during dereference";
-    oss << "\n";
-    oss << "(It isn't allowed by C anyway)";
-    oss << "\n";
-    msg.error(oss.str());
+    log_error(
+      "Can't construct rvalue reference to array type during dereference\n"
+      "(It isn't allowed by C anyway)\n");
     abort();
   }
   else
   {
-    msg.error(
-      fmt::format("Unrecognized dest type during dereference\n{}", *type));
+    log_error("Unrecognized dest type during dereference\n{}", *type);
     abort();
   }
 
@@ -871,8 +860,7 @@ void dereferencet::build_reference_rec(
     flags |= flag_src_array;
   else
   {
-    msg.error(fmt::format(
-      "Unrecognized src type during dereference\n{}", *value->type));
+    log_error("Unrecognized src type during dereference\n{}", *value->type);
     abort();
   }
 
@@ -1000,7 +988,7 @@ void dereferencet::build_reference_rec(
 
   // No scope for constructing references to arrays
   default:
-    msg.error("Unrecognized input to build_reference_rec");
+    log_error("Unrecognized input to build_reference_rec");
     abort();
   }
 }
@@ -1585,11 +1573,9 @@ void dereferencet::construct_struct_ref_from_const_offset(
       "Memory model", "Object accessed with illegal offset", guard);
     return;
   }
-  std::ostringstream oss;
-  oss << "Unexpectedly " << get_type_id(value->type) << " type'd";
-  oss << " argument to construct_struct_ref"
-      << "\n";
-  msg.error(oss.str());
+  log_error(
+    "Unexpectedly {} type'd argument to construct_struct_ref",
+    get_type_id(value->type));
   abort();
 }
 

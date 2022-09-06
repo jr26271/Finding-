@@ -11,25 +11,19 @@ Author: Daniel Kroening, kroening@kroening.com
 
 #include <ansi-c/ansi_c_parse_tree.h>
 #include <ansi-c/c_storage_spec.h>
-#include <util/message/message_stream.h>
 #include <util/std_code.h>
 #include <iostream>
 
 bool ansi_c_convert(
   ansi_c_parse_treet &ansi_c_parse_tree,
-  const std::string &module,
-  const messaget &message_handler);
+  const std::string &module);
 
-bool ansi_c_convert(
-  exprt &expr,
-  const std::string &module,
-  const messaget &message_handler);
+bool ansi_c_convert(exprt &expr, const std::string &module);
 
-class ansi_c_convertt : public message_streamt
+class ansi_c_convertt
 {
 public:
-  ansi_c_convertt(const std::string &_module, const messaget &_message_handler)
-    : message_streamt(_message_handler), module(_module)
+  ansi_c_convertt(const std::string &_module) : module(_module)
   {
   }
 
@@ -42,6 +36,7 @@ public:
   virtual void convert_type(typet &type);
 
   virtual void convert_type(typet &type, c_storage_spect &c_storage_spec);
+  std::ostringstream str;
 
 protected:
   virtual void convert_code(codet &code);

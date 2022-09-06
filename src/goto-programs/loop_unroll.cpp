@@ -31,8 +31,8 @@ bool unsound_loop_unroller::runOnLoop(loopst &loop, goto_programt &goto_program)
   }
 
   // we make k-1 copies, to be inserted before loop_exit
-  const messaget msg;
-  goto_programt copies(msg);
+
+  goto_programt copies;
   for(int i = 1; i < bound; i++)
   {
     // make a copy

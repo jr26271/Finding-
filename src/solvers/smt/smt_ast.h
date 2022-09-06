@@ -2,7 +2,7 @@
 #define SOLVERS_SMT_SMT_AST_H_
 
 #include <solvers/smt/smt_sort.h>
-#include <util/message/default_message.h>
+
 #include <irep2/irep2_expr.h>
 
 class smt_convt;
@@ -37,7 +37,7 @@ public:
   /** The solver context */
   const smt_convt *context;
 
-  smt_ast(smt_convt *ctx, smt_sortt s, const messaget &msg);
+  smt_ast(smt_convt *ctx, smt_sortt s);
   virtual ~smt_ast() = default;
 
   // "this" is the true operand.
@@ -84,24 +84,16 @@ public:
 
   virtual void dump() const
   {
-    default_message lmsg;
-    lmsg.debug("Chosen solver doesn't support printing the AST\n");
+    log_debug("Chosen solver doesn't support printing the AST\n");
   }
-
-protected:
-  const messaget &_msg;
 };
 
 template <typename solver_ast>
 class solver_smt_ast : public smt_ast
 {
 public:
-  solver_smt_ast(
-    smt_convt *ctx,
-    solver_ast _a,
-    smt_sortt s,
-    const messaget &msg)
-    : smt_ast(ctx, s, msg), a(_a)
+  solver_smt_ast(smt_convt *ctx, solver_ast _a, smt_sortt s)
+    : smt_ast(ctx, s), a(_a)
   {
   }
 

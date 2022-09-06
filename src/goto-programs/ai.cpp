@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Abstract Interpretation
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 /// \file
 /// Abstract Interpretation
 
@@ -18,10 +10,8 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <util/std_code.h>
 #include <util/std_expr.h>
 
-void ai_baset::output(
-  const goto_functionst &goto_functions,
-  std::ostream &out,
-  const messaget &msg) const
+void ai_baset::output(const goto_functionst &goto_functions, std::ostream &out)
+  const
 {
   forall_goto_functions(f_it, goto_functions)
   {
@@ -34,12 +24,11 @@ void ai_baset::output(
 
       forall_goto_program_instructions(i_it, f_it->second.body)
       {
-        out << "**** " << i_it->location_number << " " << i_it->location
-            << "\n";
+        out << i_it->location_number << " " << i_it->location << "\n";
 
         abstract_state_before(i_it)->output(out);
         out << "\n";
-        i_it->output_instruction(*migrate_namespace_lookup, "", out, msg);
+        i_it->output_instruction(*migrate_namespace_lookup, "", out);
         out << "\n";
       }
     }

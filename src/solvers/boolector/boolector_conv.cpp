@@ -1,12 +1,11 @@
 #include <boolector_conv.h>
 #include <cstring>
-#include <util/message/format.h>
 
 #define new_ast new_solver_ast<btor_smt_ast>
 
 void error_handler(const char *msg)
 {
-  assert(0 && fmt::format("Boolector error encountered\n{}", msg).c_str());
+  log_error("Boolector error encountered\n{}", msg);
   abort();
 }
 
@@ -15,25 +14,21 @@ smt_convt *create_new_boolector_solver(
   const namespacet &ns,
   tuple_iface **tuple_api [[maybe_unused]],
   array_iface **array_api,
-  fp_convt **fp_api,
-  const messaget &msg)
+  fp_convt **fp_api)
 {
-  boolector_convt *conv = new boolector_convt(ns, options, msg);
+  boolector_convt *conv = new boolector_convt(ns, options);
   *array_api = static_cast<array_iface *>(conv);
   *fp_api = static_cast<fp_convt *>(conv);
   return conv;
 }
 
-boolector_convt::boolector_convt(
-  const namespacet &ns,
-  const optionst &options,
-  const messaget &msg)
-  : smt_convt(ns, options, msg), array_iface(true, true), fp_convt(this, msg)
+boolector_convt::boolector_convt(const namespacet &ns, const optionst &options)
+  : smt_convt(ns, options), array_iface(true, true), fp_convt(this)
 
 {
   if(options.get_bool_option("int-encoding"))
   {
-    msg.error("Boolector does not support integer encoding mode");
+    log_error("Boolector does not support integer encoding mode");
     abort();
   }
 
@@ -517,13 +512,13 @@ smt_astt boolector_convt::mk_select(smt_astt a, smt_astt b)
 
 smt_astt boolector_convt::mk_smt_int(const BigInt &theint [[maybe_unused]])
 {
-  ::boolector_convt::msg.error("Boolector can't create integer sorts");
+  log_error("Boolector can't create integer sorts");
   abort();
 }
 
 smt_astt boolector_convt::mk_smt_real(const std::string &str [[maybe_unused]])
 {
-  msg.error("Boolector can't create Real sorts");
+  log_error("Boolector can't create Real sorts");
   abort();
 }
 
@@ -579,7 +574,7 @@ boolector_convt::mk_smt_symbol(const std::string &name, const smt_sort *s)
     break;
 
   default:
-    msg.error("Unknown type for symbol");
+    log_error("Unknown type for symbol");
     abort();
   }
 
@@ -658,7 +653,7 @@ bool boolector_convt::get_bool(smt_astt a)
     res = false;
     break;
   default:
-    msg.error("Can't get boolean value from Boolector");
+    log_error("Can't get boolean value from Boolector");
     abort();
   }
 
@@ -795,24 +790,18 @@ boolector_convt::convert_array_of(smt_astt init_val, unsigned long domain_width)
 
 void boolector_convt::dump_smt()
 {
-  auto f = msg.get_temp_file();
-  boolector_dump_smt2(btor, f.file());
-  msg.insert_file_contents(VerbosityLevel::Debug, f.file());
+  boolector_dump_smt2(btor, messaget::state.out);
 }
 
 void btor_smt_ast::dump() const
 {
-  default_message msg;
-  auto f = msg.get_temp_file();
-  boolector_dump_smt2_node(boolector_get_btor(a), f.file(), a);
-  msg.insert_file_contents(VerbosityLevel::Debug, f.file());
+  boolector_dump_smt2_node(boolector_get_btor(a), messaget::state.out, a);
+  fprintf(messaget::state.out, "\n");
 }
 
 void boolector_convt::print_model()
 {
-  auto f = msg.get_temp_file();
-  boolector_print_model(btor, const_cast<char *>("smt2"), f.file());
-  msg.insert_file_contents(VerbosityLevel::Status, f.file());
+  boolector_print_model(btor, const_cast<char *>("smt2"), messaget::state.out);
 }
 
 smt_sortt boolector_convt::mk_bool_sort()

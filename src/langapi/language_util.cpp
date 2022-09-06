@@ -1,20 +1,9 @@
-/*******************************************************************\
-
-Module:
-
-Author: Daniel Kroening, kroening@cs.cmu.edu
-
-\*******************************************************************/
-
 #include <langapi/language_util.h>
 #include <langapi/mode.h>
 #include <memory>
 
-std::string from_expr(
-  const namespacet &ns,
-  const irep_idt &identifier,
-  const exprt &expr,
-  const messaget &msg)
+std::string
+from_expr(const namespacet &ns, const irep_idt &identifier, const exprt &expr)
 {
   int mode;
 
@@ -37,17 +26,14 @@ std::string from_expr(
     }
   }
 
-  std::unique_ptr<languaget> p(mode_table[mode].new_language(msg));
+  std::unique_ptr<languaget> p(mode_table[mode].new_language());
   std::string result;
   p->from_expr(expr, result, ns);
   return result;
 }
 
-std::string from_type(
-  const namespacet &ns,
-  const irep_idt &identifier,
-  const typet &type,
-  const messaget &msg)
+std::string
+from_type(const namespacet &ns, const irep_idt &identifier, const typet &type)
 {
   int mode;
 
@@ -70,20 +56,20 @@ std::string from_type(
     }
   }
 
-  std::unique_ptr<languaget> p(mode_table[mode].new_language(msg));
+  std::unique_ptr<languaget> p(mode_table[mode].new_language());
   std::string result;
   p->from_type(type, result, ns);
   return result;
 }
 
-std::string from_expr(const exprt &expr, const messaget &msg)
+std::string from_expr(const exprt &expr)
 {
-  contextt context(msg);
-  return from_expr(namespacet(context), "", expr, msg);
+  contextt context;
+  return from_expr(namespacet(context), "", expr);
 }
 
-std::string from_type(const typet &type, const messaget &msg)
+std::string from_type(const typet &type)
 {
-  contextt context(msg);
-  return from_type(namespacet(context), "", type, msg);
+  contextt context;
+  return from_type(namespacet(context), "", type);
 }

@@ -1,14 +1,6 @@
-/*******************************************************************\
-
-Module:
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <util/location.h>
+#include <util/message.h>
 #include <util/symbol.h>
-#include <util/message/default_message.h>
 
 symbolt::symbolt()
 {
@@ -49,10 +41,9 @@ void symbolt::swap(symbolt &b)
 
 void symbolt::dump() const
 {
-  default_message msg;
   std::ostringstream oss;
   show(oss);
-  msg.debug(oss.str());
+  log_status("{}", oss.str());
 }
 
 void symbolt::show(std::ostream &out) const

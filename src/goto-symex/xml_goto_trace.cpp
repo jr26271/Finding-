@@ -1,13 +1,3 @@
-/*******************************************************************\
-
-Module: Traces of GOTO Programs
-
-Author: Daniel Kroening
-
-  Date: November 2005
-
-\*******************************************************************/
-
 #include <cassert>
 #include <goto-symex/printf_formatter.h>
 #include <goto-symex/xml_goto_trace.h>
@@ -15,11 +5,7 @@ Author: Daniel Kroening
 #include <util/i2string.h>
 #include <util/xml_irep.h>
 
-void convert(
-  const namespacet &ns,
-  const goto_tracet &goto_trace,
-  xmlt &xml,
-  const messaget &msg)
+void convert(const namespacet &ns, const goto_tracet &goto_trace, xmlt &xml)
 {
   xml = xmlt("goto_trace");
 
@@ -72,10 +58,9 @@ void convert(
 
       if(!is_nil_expr(step.value))
       {
-        value_string =
-          from_expr(ns, identifier, migrate_expr_back(step.value), msg);
+        value_string = from_expr(ns, identifier, migrate_expr_back(step.value));
         type_string =
-          from_type(ns, identifier, migrate_type_back(step.value->type), msg);
+          from_type(ns, identifier, migrate_type_back(step.value->type));
       }
 
       const symbolt *symbol = ns.lookup(identifier);
@@ -86,7 +71,7 @@ void convert(
         base_name = symbol->name;
         display_name = symbol->name;
         if(type_string == "")
-          type_string = from_type(ns, identifier, symbol->type, msg);
+          type_string = from_type(ns, identifier, symbol->type);
 
         xml_assignment.new_element("mode").data =
           xmlt::escape(id2string(symbol->mode));

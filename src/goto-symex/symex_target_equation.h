@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Generate Equation using Symbolic Execution
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #ifndef CPROVER_BASIC_SYMEX_EQUATION_H
 #define CPROVER_BASIC_SYMEX_EQUATION_H
 
@@ -28,8 +20,7 @@ class symex_target_equationt : public symex_targett
 public:
   class SSA_stept;
 
-  symex_target_equationt(const namespacet &_ns, const messaget &msg)
-    : ns(_ns), msg(msg)
+  symex_target_equationt(const namespacet &_ns) : ns(_ns)
   {
     debug_print = config.options.get_bool_option("symex-ssa-trace");
     ssa_trace = config.options.get_bool_option("ssa-trace");
@@ -154,12 +145,10 @@ public:
     {
     }
 
-    void
-    output(const namespacet &ns, std::ostream &out, const messaget &msg) const;
+    void output(const namespacet &ns, std::ostream &out) const;
     void short_output(
       const namespacet &ns,
       std::ostream &out,
-      const messaget &msg,
       bool show_ignored = false) const;
     void dump() const;
   };
@@ -211,7 +200,7 @@ public:
 
 protected:
   const namespacet &ns;
-  const messaget &msg;
+
   bool debug_print;
   bool ssa_trace;
   bool ssa_smt_trace;
@@ -227,10 +216,7 @@ public:
   {
   };
 
-  runtime_encoded_equationt(
-    const namespacet &_ns,
-    smt_convt &conv,
-    const messaget &msg);
+  runtime_encoded_equationt(const namespacet &_ns, smt_convt &conv);
 
   void push_ctx() override;
   void pop_ctx() override;

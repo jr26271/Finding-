@@ -7,6 +7,8 @@
 #include <util/base_type.h>
 #include <util/c_types.h>
 #include <util/expr_util.h>
+#include <util/message.h>
+#include <util/message/format.h>
 #include <util/type_byte_size.h>
 
 // Helpers extracted from z3_convt.
@@ -61,11 +63,8 @@ smt_convt::get_member_name_field(const type2tc &t, const expr2tc &name) const
   return get_member_name_field(t, str.value);
 }
 
-smt_convt::smt_convt(
-  const namespacet &_ns,
-  const optionst &_options,
-  const messaget &msg)
-  : ctx_level(0), boolean_sort(nullptr), ns(_ns), options(_options), msg(msg)
+smt_convt::smt_convt(const namespacet &_ns, const optionst &_options)
+  : ctx_level(0), boolean_sort(nullptr), ns(_ns), options(_options)
 {
   int_encoding = options.get_bool_option("int-encoding");
   tuple_api = nullptr;
@@ -1163,8 +1162,7 @@ smt_astt smt_convt::convert_ast(const expr2tc &expr)
     break;
   }
   default:
-    msg.error(fmt::format(
-      "Couldn't convert expression in unrecognised format\n{}", *expr));
+    log_error("Couldn't convert expression in unrecognised format\n{}", *expr);
     abort();
   }
 
@@ -1276,8 +1274,8 @@ smt_sortt smt_convt::convert_sort(const type2tc &type)
   }
 
   default:
-    msg.error(fmt::format(
-      "Unexpected type ID {} reached SMT conversion", get_type_id(type)));
+    log_error(
+      "Unexpected type ID {} reached SMT conversion", get_type_id(type));
     abort();
   }
 
@@ -1423,8 +1421,7 @@ smt_astt smt_convt::convert_terminal(const expr2tc &expr)
   }
 
   default:
-    msg.error(
-      fmt::format("Converting unrecognized terminal expr to SMT\n{}", *expr));
+    log_error("Converting unrecognized terminal expr to SMT\n{}", *expr);
     abort();
   }
 }
@@ -2220,7 +2217,7 @@ expr2tc smt_convt::get(const expr2tc &expr)
     {
       if(extracting_from_array_tuple_is_error)
       {
-        msg.error(
+        log_error(
           "Fetching array elements inside tuples currently "
           "unimplemented, sorry");
         abort();
@@ -2337,15 +2334,15 @@ expr2tc smt_convt::get_by_ast(const type2tc &type, smt_astt a)
   default:
     if(!options.get_bool_option("non-supported-models-as-zero"))
     {
-      msg.error(fmt::format(
-        "Unimplemented type'd expression ({}) in smt get", type->type_id));
+      log_error(
+        "Unimplemented type'd expression ({}) in smt get", type->type_id);
       abort();
     }
     else
     {
-      msg.warning(fmt::format(
+      log_warning(
         "Unimplemented type'd expression ({}) in smt get. Returning zero!",
-        type->type_id));
+        type->type_id);
       return gen_zero(type);
     }
   }
@@ -2373,16 +2370,15 @@ expr2tc smt_convt::get_by_type(const expr2tc &expr)
   default:
     if(!options.get_bool_option("non-supported-models-as-zero"))
     {
-      msg.error(fmt::format(
-        "Unimplemented type'd expression ({}) in smt get",
-        expr->type->type_id));
+      log_error(
+        "Unimplemented type'd expression ({}) in smt get", expr->type->type_id);
       abort();
     }
     else
     {
-      msg.warning(fmt::format(
+      log_warning(
         "Unimplemented type'd expression ({}) in smt get. Returning zero!",
-        expr->type->type_id));
+        expr->type->type_id);
       return gen_zero(expr->type);
     }
   }
@@ -2426,14 +2422,11 @@ smt_astt smt_convt::array_create(const expr2tc &expr)
     return convert_array_of_prep(expr);
   // Check size
   assert(is_constant_array2t(expr) || is_constant_vector2t(expr));
-  expr2tc size = is_vector_type(expr) ? to_vector_type(expr->type).array_size
-                                      : to_array_type(expr->type).array_size;
-  bool is_infinite = is_vector_type(expr)
-                       ? to_vector_type(expr->type).size_is_infinite
-                       : to_array_type(expr->type).size_is_infinite;
-  auto members = is_vector_type(expr)
-                   ? to_constant_vector2t(expr).datatype_members
-                   : to_constant_array2t(expr).datatype_members;
+  expr2tc size = std::static_pointer_cast<array_data>(expr->type)->array_size;
+  bool is_infinite =
+    std::static_pointer_cast<array_data>(expr->type)->size_is_infinite;
+  auto members =
+    std::static_pointer_cast<constant_datatype_data>(expr)->datatype_members;
 
   // Handle constant array expressions: these don't have tuple type and so
   // don't need funky handling, but we need to create a fresh new symbol and
@@ -2448,7 +2441,7 @@ smt_astt smt_convt::array_create(const expr2tc &expr)
 
   if(!is_constant_int2t(size))
   {
-    msg.error("Non-constant sized array of type constant_array_of2t");
+    log_error("Non-constant sized array of type constant_array_of2t");
     abort();
   }
 
@@ -2726,20 +2719,19 @@ smt_astt smt_ast::project(
   smt_convt *ctx [[maybe_unused]],
   unsigned int idx [[maybe_unused]]) const
 {
-  _msg.error("Projecting from non-tuple based AST");
+  log_error("Projecting from non-tuple based AST");
   abort();
 }
 
 void smt_convt::dump_smt()
 {
-  msg.error(fmt::format("SMT dump not implemented for {}", solver_text()));
+  log_error("SMT dump not implemented for {}", solver_text());
   abort();
 }
 
 void smt_convt::print_model()
 {
-  msg.error(
-    fmt::format("SMT model printing not implemented for {}", solver_text()));
+  log_error("SMT model printing not implemented for {}", solver_text());
   abort();
 }
 
@@ -2782,60 +2774,60 @@ expr2tc smt_convt::get_by_value(const type2tc &type, BigInt value)
 
   if(options.get_bool_option("non-supported-models-as-zero"))
   {
-    msg.warning(fmt::format(
-      "Can't generate one for type {}. Returning zero", get_type_id(type)));
+    log_warning(
+      "Can't generate one for type {}. Returning zero", get_type_id(type));
     return gen_zero(type);
   }
 
-  msg.error(fmt::format("Can't generate one for type {}", get_type_id(type)));
+  log_error("Can't generate one for type {}", get_type_id(type));
   abort();
 }
 
 smt_sortt smt_convt::mk_bool_sort()
 {
-  msg.error("Chosen solver doesn't support boolean sorts");
+  log_error("Chosen solver doesn't support boolean sorts");
   abort();
 }
 
 smt_sortt smt_convt::mk_real_sort()
 {
-  msg.error("Chosen solver doesn't support real sorts");
+  log_error("Chosen solver doesn't support real sorts");
   abort();
 }
 
 smt_sortt smt_convt::mk_int_sort()
 {
-  msg.error("Chosen solver doesn't support integer sorts");
+  log_error("Chosen solver doesn't support integer sorts");
   abort();
 }
 
 smt_sortt smt_convt::mk_bv_sort(std::size_t)
 {
-  msg.error("Chosen solver doesn't support bit vector sorts");
+  log_error("Chosen solver doesn't support bit vector sorts");
   abort();
 }
 
 smt_sortt smt_convt::mk_fbv_sort(std::size_t)
 {
-  msg.error("Chosen solver doesn't support bit vector sorts");
+  log_error("Chosen solver doesn't support bit vector sorts");
   abort();
 }
 
 smt_sortt smt_convt::mk_array_sort(smt_sortt, smt_sortt)
 {
-  msg.error("Chosen solver doesn't support array sorts");
+  log_error("Chosen solver doesn't support array sorts");
   abort();
 }
 
 smt_sortt smt_convt::mk_bvfp_sort(std::size_t, std::size_t)
 {
-  msg.error("Chosen solver doesn't support bit vector sorts");
+  log_error("Chosen solver doesn't support bit vector sorts");
   abort();
 }
 
 smt_sortt smt_convt::mk_bvfp_rm_sort()
 {
-  msg.error("Chosen solver doesn't support bit vector sorts");
+  log_error("Chosen solver doesn't support bit vector sorts");
   abort();
 }
 

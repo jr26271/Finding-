@@ -8,8 +8,6 @@
 #include <irep2/irep2_utils.h>
 #include <util/migrate.h>
 #include <util/std_types.h>
-#include <util/message/format.h>
-#include <util/message/default_message.h>
 
 static const char *expr_names[] = {
   "constant_int",
@@ -259,8 +257,7 @@ std::string expr2t::pretty(unsigned int indent) const
 
 void expr2t::dump() const
 {
-  default_message msg;
-  msg.debug(pretty(0));
+  log_status("{}", pretty(0));
 }
 
 template <>

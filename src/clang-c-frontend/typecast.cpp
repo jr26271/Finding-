@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <clang-c-frontend/clang_c_convert.h>
+#include <util/message.h>
 
 void gen_typecast(const namespacet &ns, exprt &dest, const typet &type)
 {
@@ -31,14 +32,6 @@ void gen_typecast_arithmetic(const namespacet &ns, exprt &expr)
 
 void clang_c_convertert::gen_typecast_to_union(exprt &e, const typet &t)
 {
-  clang_c_convertert::gen_typecast_to_union(e, t, msg);
-}
-
-void clang_c_convertert::gen_typecast_to_union(
-  exprt &e,
-  const typet &t,
-  const messaget &msg)
-{
   // If RHS is already of same union type, don't do anything
   if(e.type() == t.type())
     return;
@@ -59,8 +52,6 @@ void clang_c_convertert::gen_typecast_to_union(
 
   /* We should never reach here since clang frontend already checks for this
    * however... we should prevent any funny things to happen */
-  std::ostringstream oss;
-  oss << "Couldn't map type " << e.type().pretty_name() << " into the union";
-  msg.error(oss.str());
+  log_error("Couldn't map type {} into the union", e.type().pretty_name());
   abort();
 }

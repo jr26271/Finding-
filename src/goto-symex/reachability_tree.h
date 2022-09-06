@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module:
-
-Author: Lucas Cordeiro, lcc08r@ecs.soton.ac.uk
-
-\*******************************************************************/
-
 #ifndef REACHABILITY_TREE_H_
 #define REACHABILITY_TREE_H_
 
@@ -19,7 +11,7 @@ Author: Lucas Cordeiro, lcc08r@ecs.soton.ac.uk
 #include <unordered_map>
 #include <unordered_set>
 #include <util/crypto_hash.h>
-#include <util/message/message.h>
+#include <util/message.h>
 #include <util/options.h>
 
 /**
@@ -69,15 +61,13 @@ public:
    *  @param ns Namespace to operate in
    *  @param target Target to listen in on assigns/asserts/assumes. Is cloned.
    *  @param context Context to operate in.
-   *  @param message_handler Message object for symex errors/warnings/info
    */
   reachability_treet(
     goto_functionst &goto_functions,
     const namespacet &ns,
     optionst &opts,
     std::shared_ptr<symex_targett> target,
-    contextt &context,
-    const messaget &message_handler);
+    contextt &context);
 
   /**
    *  Default destructor.
@@ -253,11 +243,11 @@ public:
   {
   public:
     dfs_position(const reachability_treet &rt);
-    dfs_position(const std::string &&filename, const messaget &msg);
-    bool write_to_file(const std::string &&filename, const messaget &msg) const;
+    dfs_position(const std::string &&filename);
+    bool write_to_file(const std::string &&filename) const;
 
   protected:
-    bool read_from_file(const std::string &&filename, const messaget &msg);
+    bool read_from_file(const std::string &&filename);
 
   public:
     struct dfs_state
@@ -360,8 +350,6 @@ protected:
   bool por;
   /** Set of state hashes we've discovered */
   std::set<crypto_hash> hit_hashes;
-  /** Message handler reference. */
-  const messaget &message_handler;
   /** Flag as to whether we're picking interleaving directions explicitly.
    *  Corresponds to the --interactive-ileaves option. */
   bool interactive_ileaves;

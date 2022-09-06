@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Value Set Propagation
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #ifndef CPROVER_POINTER_ANALYSIS_VALUE_PROPAGATION_H
 #define CPROVER_POINTER_ANALYSIS_VALUE_PROPAGATION_H
 
@@ -18,8 +10,8 @@ class value_set_analysist : public value_setst,
                             public static_analysist<value_set_domaint>
 {
 public:
-  value_set_analysist(const namespacet &_ns, const messaget &msg)
-    : static_analysist<value_set_domaint>(_ns, msg)
+  explicit value_set_analysist(const namespacet &_ns)
+    : static_analysist<value_set_domaint>(_ns)
   {
   }
 

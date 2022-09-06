@@ -1,13 +1,3 @@
-/*******************************************************************\
-
-Module: Race Detection for Threaded Goto Programs
-
-Author: Daniel Kroening
-
-Date: February 2006
-
-\*******************************************************************/
-
 #include <goto-programs/rw_set.h>
 #include <pointer-analysis/goto_program_dereference.h>
 #include <util/arith_tools.h>
@@ -95,7 +85,7 @@ void rw_sett::read_write_rec(
     exprt tmp(expr.op0());
     expr2tc tmp_expr;
     migrate_expr(tmp, tmp_expr);
-    dereference(target, tmp_expr, ns, value_sets, msg);
+    dereference(target, tmp_expr, ns, value_sets);
     tmp = migrate_expr_back(tmp_expr);
 
     read_write_rec(tmp, r, w, suffix, guard);

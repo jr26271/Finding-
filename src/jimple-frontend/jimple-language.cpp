@@ -1,21 +1,24 @@
 #include <assert.h>
 #include <jimple-frontend/jimple-language.h>
-#include <util/message/format.h>
+
 #include <c2goto/cprover_library.h>
-languaget *new_jimple_language(const messaget &msg)
+
+languaget *new_jimple_language()
 {
-  return new jimple_languaget(msg);
+  return new jimple_languaget;
 }
-bool jimple_languaget::final(contextt &context, const messaget &msg)
+
+bool jimple_languaget::final(contextt &context)
 {
-  msg.status("Adding cprover library");
-  add_cprover_library(context, msg);
+  log_status("Adding cprover library");
+  add_cprover_library(context);
 
   add_intrinsics(context);
-  msg.status("Adding __ESBMC_main");
+  log_status("Adding __ESBMC_main");
   setup_main(context);
   return false;
 }
+
 bool jimple_languaget::from_type(
   const typet &,
   std::string &,
@@ -25,6 +28,7 @@ bool jimple_languaget::from_type(
   assert(!"Not implemented yet");
   return false;
 }
+
 bool jimple_languaget::from_expr(
   const exprt &,
   std::string &,
@@ -78,7 +82,7 @@ static void
 add_global_static_variable(contextt &ctx, const typet t, std::string name)
 {
   // TODO: Maybe they should be part of Jimple context?
-  std::string id = fmt::format("c:@{}", name);
+  std::string id = "c:@" + name;
   symbolt symbol;
   symbol.mode = "C";
   symbol.type = std::move(t);
@@ -139,7 +143,7 @@ void jimple_languaget::setup_main(contextt &context)
   symbolt *s = context.find_symbol(main_symbol);
   if(s == nullptr)
   {
-    msg.error("No main method");
+    log_error("No main method");
     abort();
     return; // give up, no main
   }
@@ -148,7 +152,7 @@ void jimple_languaget::setup_main(contextt &context)
   // check if it has a body
   if(symbol.value.is_nil())
   {
-    msg.error("Empty body for main");
+    log_error("Empty body for main");
     abort();
   }
 
@@ -184,7 +188,7 @@ void jimple_languaget::setup_main(contextt &context)
 
   if(context.move(new_symbol))
   {
-    msg.error("main already defined by another language module");
+    log_error("main already defined by another language module");
     return;
   }
 

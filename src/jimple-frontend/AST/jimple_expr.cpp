@@ -5,8 +5,6 @@
 #include <util/expr_util.h>
 #include <util/std_code.h>
 #include <util/std_expr.h>
-#include <util/message/format.h>
-#include <util/message/default_message.h>
 
 void jimple_constant::from_json(const json &j)
 {
@@ -160,8 +158,7 @@ std::shared_ptr<jimple_expr> jimple_expr::get_expression(const json &j)
     return std::make_shared<jimple_virtual_member>(c);
   }
 
-  default_message msg;
-  msg.error(fmt::format("Unexpected expr type: {}", expr_type));
+  log_error("Unexpected expr type: {}", expr_type);
   abort();
 }
 
@@ -266,6 +263,13 @@ void jimple_expr_invoke::from_json(const json &j)
     parameters.push_back(std::move(jimple_expr::get_expression(x)));
   }
   method += "_" + get_hash_name();
+
+  // TODO: Move intrinsics to backend
+  if(base_class == "java.lang.Integer" && method == "valueOf_1")
+  {
+    log_debug("Got an intrinsic call to valueOf int");
+    is_intrinsic_method = true;
+  }
 }
 
 exprt jimple_expr_invoke::to_exprt(
@@ -287,6 +291,11 @@ exprt jimple_expr_invoke::to_exprt(
     return skip;
   }
 
+  // TODO: Move intrinsics to backend
+  if(base_class == "java.lang.Integer" && method == "valueOf_1")
+    // This would be called with valueOf(2), valueOf(42), etc...
+    return parameters[0]->to_exprt(ctx, class_name, function_name);
+
   if(is_nondet_call())
   {
     jimple_nondet nondet(method);
@@ -300,6 +309,11 @@ exprt jimple_expr_invoke::to_exprt(
   oss << base_class << ":" << method;
 
   auto symbol = ctx.find_symbol(oss.str());
+  if(!symbol)
+  {
+    log_error("Could not find symbol {}", oss.str());
+    abort();
+  }
   call.function() = symbol_expr(*symbol);
   if(!lhs.is_nil())
     call.lhs() = lhs;
@@ -440,14 +454,18 @@ exprt jimple_newarray::to_exprt(
 
   // LHS of call is the tmp var
   call.lhs() = symbol_expr(tmp_added_symbol);
-  auto to_convert =
-    base_type.is_pointer() ? base_type.subtype().width() : base_type.width();
+  int type_width = 64;
+  if(!(base_type.is_pointer() && base_type.subtype().is_pointer()))
+  {
+    auto to_convert =
+      base_type.is_pointer() ? base_type.subtype().width() : base_type.width();
 
-  auto as_number = std::stoi(to_convert.as_string()); // we want bytes
+    type_width = std::stoi(to_convert.as_string()); // we want bytes
+  }
 
   auto new_expr = exprt("*", uint_type());
   auto base_size = constant_exprt(
-    integer2binary(as_number, 10), integer2string(as_number), uint_type());
+    integer2binary(type_width, 10), integer2string(type_width), uint_type());
   new_expr.move_to_operands(alloc_size, base_size);
 
   call.arguments().push_back(new_expr);

@@ -19,7 +19,6 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <fstream>
 #include <util/config.h>
 #include <util/i2string.h>
-#include <util/message/message_stream.h>
 
 extern "C"
 {
@@ -183,23 +182,18 @@ void setup_cpp_defs(const char **defs)
 #include <sys/wait.h>
 #include <unistd.h>
 
-bool c_preprocess(
-  const std::string &path,
-  std::ostream &outstream,
-  bool is_cpp,
-  const messaget &message_handler)
+bool c_preprocess(const std::string &path, std::ostream &outstream, bool is_cpp)
 {
   char out_file_buf[32], stderr_file_buf[32];
   pid_t pid;
   int fd, status;
-
-  message_streamt message_stream(message_handler);
+  std::ostringstream str;
 
   sprintf(out_file_buf, "/tmp/ESBMC_XXXXXX");
   fd = mkstemp(out_file_buf);
   if(fd < 0)
   {
-    message_stream.error("Couldn't open preprocessing output file");
+    log_error("Couldn't open preprocessing output file");
     return true;
   }
   close(fd);
@@ -208,7 +202,7 @@ bool c_preprocess(
   fd = mkstemp(stderr_file_buf);
   if(fd < 0)
   {
-    message_stream.error("Couldn't open preprocessing stderr file");
+    log_error("Couldn't open preprocessing stderr file");
     return true;
   }
 
@@ -224,13 +218,13 @@ bool c_preprocess(
       ;
     if((foo) < 0)
     {
-      message_stream.error("Failed to wait for preprocessing process");
+      log_error("Failed to wait for preprocessing process");
       return true;
     }
 
     std::ifstream stderr_input(stderr_file_buf);
-    message_stream.str << stderr_input.rdbuf();
-    message_stream.status();
+    str << stderr_input.rdbuf();
+    log_status(str.str());
 
     std::ifstream output_input(out_file_buf);
     outstream << output_input.rdbuf();
@@ -239,7 +233,7 @@ bool c_preprocess(
     unlink(out_file_buf);
     if(!WIFEXITED(status) || WEXITSTATUS(status) != 0)
     {
-      message_stream.error("Preprocessing failed");
+      log_error("Preprocessing failed");
       return true;
     }
 
@@ -264,11 +258,7 @@ bool c_preprocess(
 
 #include <io.h>
 
-bool c_preprocess(
-  const std::string &path,
-  std::ostream &outstream,
-  bool is_cpp,
-  message_handlert &message_handler)
+bool c_preprocess(const std::string &path, std::ostream &outstream, bool is_cpp)
 {
   int err, ret;
   char out_file_buf[288], tmpdir[256];
@@ -276,15 +266,13 @@ bool c_preprocess(
   // For Windows, we can't fork and run the preprocessor in a seperate process.
   // Instead, just run it within the existing ESBMC process.
 
-  message_streamt message_stream(message_handler);
-
   GetTempPath(sizeof(tmpdir), tmpdir);
   GetTempFileName(tmpdir, "bmc", 0, out_file_buf);
 
   ret = configure_and_run_cpp(out_file_buf, path, cpp_windows_defs, is_cpp);
   if(ret != 0)
   {
-    message_stream.error("Preprocessor returned an error");
+    log_error("Preprocessor returned an error");
     return true;
   }
 

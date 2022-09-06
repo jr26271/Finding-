@@ -1,21 +1,11 @@
-/*******************************************************************\
-Module: Jimple AST Interface
-Author: Rafael Sá Menezes
-Date: September 2021
-Description: This interface will define every method that needs to
-  be implemented by every Jimple AST
-\*******************************************************************/
-
 #ifndef ESBMC_JIMPLE_AST_H
 #define ESBMC_JIMPLE_AST_H
 
-#include <util/message/default_message.h>
 #include <util/expr.h>
 #include <util/context.h>
 #include <util/std_types.h>
 #include <util/c_types.h>
 #include <nlohmann/json.hpp>
-#include <util/message/format.h>
 
 // For json parsing
 using json = nlohmann::json;
@@ -32,8 +22,7 @@ public:
    */
   void dump() const
   {
-    default_message msg;
-    msg.debug(this->to_string());
+    log_debug("{}", this->to_string());
   }
 
   /**
@@ -98,7 +87,9 @@ protected:
 
     std::string id, name;
     id = get_symbol_name(
-      class_name, function_name, fmt::format("return_value$tmp${}", counter++));
+      class_name,
+      function_name,
+      "return_value$tmp$" + std::to_string(counter++));
     name = "return_value$tmp$";
     name += counter;
     auto tmp_symbol =
@@ -212,6 +203,10 @@ protected:
       l.set_function(function_name);
     return l;
   }
+
+public:
+  /// instruction location
+  int line_location = -1;
 };
 
 // These functions are used by nlohmann::json. Making it easier to

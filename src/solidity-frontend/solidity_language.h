@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Solidity Language module
-
-Author: Kunjian Song, kunjian.song@postgrad.manchester.ac.uk
-
-\*******************************************************************/
-
 #ifndef SOLIDITY_FRONTEND_SOLIDITY_AST_LANGUAGE_H_
 #define SOLIDITY_FRONTEND_SOLIDITY_AST_LANGUAGE_H_
 
@@ -19,14 +11,11 @@ Author: Kunjian Song, kunjian.song@postgrad.manchester.ac.uk
 class solidity_languaget : public clang_c_languaget
 {
 public:
-  bool parse(const std::string &path, const messaget &msg) override;
+  bool parse(const std::string &path) override;
 
-  bool final(contextt &context, const messaget &msg) override;
+  bool final(contextt &context) override;
 
-  bool typecheck(
-    contextt &context,
-    const std::string &module,
-    const messaget &msg) override;
+  bool typecheck(contextt &context, const std::string &module) override;
 
   std::string id() const override
   {
@@ -39,19 +28,15 @@ public:
   std::string temp_path;
 
   // Functions to handle temp C file used by clang-c-frontend
-  std::string get_temp_file(const messaget &msg);
+  std::string get_temp_file();
   std::string temp_c_file();
 
-  languaget *new_language(const messaget &msg) const override
+  languaget *new_language() const override
   {
-    return new solidity_languaget(msg);
+    return new solidity_languaget;
   }
 
-  // constructor, destructor
-  ~solidity_languaget() override = default;
-  explicit solidity_languaget(const messaget &msg);
-
-  bool convert_intrinsics(contextt &context, const messaget &msg);
+  bool convert_intrinsics(contextt &context);
 
   // store AST json in nlohmann::json data structure
   nlohmann::json ast_json;
@@ -60,6 +45,6 @@ public:
   languaget *clang_c_module;
 };
 
-languaget *new_solidity_language(const messaget &msg);
+languaget *new_solidity_language();
 
 #endif /* SOLIDITY_FRONTEND_SOLIDITY_AST_LANGUAGE_H_ */

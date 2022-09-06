@@ -95,14 +95,13 @@ static void internal_additions(std::string &code)
     "\n";
 }
 
-ansi_c_languaget::ansi_c_languaget(const messaget &msg) : languaget(msg)
+ansi_c_languaget::ansi_c_languaget()
 {
 }
 
 bool ansi_c_languaget::preprocess(
   const std::string &path,
-  std::ostream &outstream,
-  const messaget &message_handler)
+  std::ostream &outstream)
 {
 // check extensions
 
@@ -125,12 +124,10 @@ bool ansi_c_languaget::preprocess(
   }
 #endif
 
-  return c_preprocess(path, outstream, false, message_handler);
+  return c_preprocess(path, outstream, false);
 }
 
-bool ansi_c_languaget::parse(
-  const std::string &path,
-  const messaget &message_handler)
+bool ansi_c_languaget::parse(const std::string &path)
 {
   // store the path
 
@@ -140,7 +137,7 @@ bool ansi_c_languaget::parse(
 
   std::ostringstream o_preprocessed;
 
-  if(preprocess(path, o_preprocessed, message_handler))
+  if(preprocess(path, o_preprocessed))
     return true;
 
   std::istringstream i_preprocessed(o_preprocessed.str());
@@ -184,30 +181,27 @@ bool ansi_c_languaget::parse(
   return result;
 }
 
-bool ansi_c_languaget::typecheck(
-  contextt &context,
-  const std::string &module,
-  const messaget &message_handler)
+bool ansi_c_languaget::typecheck(contextt &context, const std::string &module)
 {
-  if(ansi_c_convert(parse_tree, module, message_handler))
+  if(ansi_c_convert(parse_tree, module))
     return true;
 
-  contextt new_context(message_handler);
+  contextt new_context;
 
-  if(ansi_c_typecheck(parse_tree, new_context, module, message_handler))
+  if(ansi_c_typecheck(parse_tree, new_context, module))
     return true;
 
-  if(c_link(context, new_context, message_handler, module))
+  if(c_link(context, new_context, module))
     return true;
 
   return false;
 }
 
-bool ansi_c_languaget::final(contextt &context, const messaget &message_handler)
+bool ansi_c_languaget::final(contextt &context)
 {
-  if(c_final(context, message_handler))
+  if(c_final(context))
     return true;
-  if(c_main(context, "main", message_handler))
+  if(c_main(context, "main"))
     return true;
 
   return false;
@@ -218,9 +212,9 @@ void ansi_c_languaget::show_parse(std::ostream &out)
   parse_tree.output(out);
 }
 
-languaget *new_ansi_c_language(const messaget &msg)
+languaget *new_ansi_c_language()
 {
-  return new ansi_c_languaget(msg);
+  return new ansi_c_languaget();
 }
 
 bool ansi_c_languaget::from_expr(
@@ -244,8 +238,7 @@ bool ansi_c_languaget::from_type(
 bool ansi_c_languaget::merge_context(
   contextt &dest,
   contextt &src,
-  const messaget &message_handler,
   const std::string &module) const
 {
-  return c_link(dest, src, message_handler, module);
+  return c_link(dest, src, module);
 }

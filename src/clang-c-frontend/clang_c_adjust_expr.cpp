@@ -7,12 +7,13 @@
 #include <util/cprover_prefix.h>
 #include <util/expr_util.h>
 #include <util/ieee_float.h>
+#include <util/message.h>
+#include <util/message/format.h>
 #include <util/prefix.h>
 #include <util/std_code.h>
-#include <util/message/format.h>
 
-clang_c_adjust::clang_c_adjust(contextt &_context, const messaget &msg)
-  : context(_context), ns(namespacet(context)), msg(msg)
+clang_c_adjust::clang_c_adjust(contextt &_context)
+  : context(_context), ns(namespacet(context))
 {
 }
 
@@ -220,8 +221,7 @@ void clang_c_adjust::adjust_side_effect(side_effect_exprt &expr)
     }
     else
     {
-      msg.error(fmt::format(
-        "unknown side effect: {} at {}", statement, expr.location()));
+      log_error("unknown side effect: {} at {}", statement, expr.location());
       abort();
     }
   }
@@ -363,10 +363,8 @@ void clang_c_adjust::adjust_float_arith(exprt &expr)
   // equality and disequality on float is not mathematical equality!
   assert(expr.operands().size() == 2);
   auto t = ns.follow(expr.type());
-
   // first we should check if the type itself is a float
   bool need_float_adjust = t.is_floatbv();
-
   /** if type is not a float then we should check if it is a vector
    * this is needed because a operation such as {0.1, 0.2} + 1
    * needs to use the float version
@@ -494,10 +492,10 @@ void clang_c_adjust::adjust_sizeof(exprt &expr)
   }
   else
   {
-    msg.error(fmt::format(
+    log_error(
       "sizeof operator expects zero or one operand, "
       "but got{}",
-      expr.operands().size()));
+      expr.operands().size());
     abort();
   }
 
@@ -505,7 +503,7 @@ void clang_c_adjust::adjust_sizeof(exprt &expr)
 
   if(new_expr.is_nil())
   {
-    msg.error(fmt::format("type has no size, {}", type.name()));
+    log_error("type has no size, {}", type.name());
     abort();
   }
 
@@ -524,7 +522,7 @@ void clang_c_adjust::adjust_type(typet &type)
 
     if(s == nullptr)
     {
-      msg.error(fmt::format("type symbol `{}' not found", identifier));
+      log_error("type symbol `{}' not found", identifier);
       abort();
     }
 
@@ -532,7 +530,7 @@ void clang_c_adjust::adjust_type(typet &type)
 
     if(!symbol.is_type)
     {
-      msg.error(fmt::format("expected type symbol, but got\n{}", symbol));
+      log_error("expected type symbol, but got\n{}", symbol);
       abort();
     }
 
@@ -734,7 +732,7 @@ void clang_c_adjust::do_special_functions(side_effect_expr_function_callt &expr)
     {
       if(expr.arguments().size() != 2)
       {
-        msg.error(fmt::format("same_object expects two operands\n{}", expr));
+        log_error("same_object expects two operands\n{}", expr);
         abort();
       }
 
@@ -746,7 +744,7 @@ void clang_c_adjust::do_special_functions(side_effect_expr_function_callt &expr)
     {
       if(expr.arguments().size() != 1)
       {
-        msg.error(fmt::format("pointer_offset expects one argument\n{}", expr));
+        log_error("pointer_offset expects one argument\n{}", expr);
         abort();
       }
 
@@ -758,7 +756,7 @@ void clang_c_adjust::do_special_functions(side_effect_expr_function_callt &expr)
     {
       if(expr.arguments().size() != 1)
       {
-        msg.error(fmt::format("pointer_object expects one argument\n{}", expr));
+        log_error("pointer_object expects one argument\n{}", expr);
         abort();
       }
 

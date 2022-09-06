@@ -1,13 +1,5 @@
-/*******************************************************************\
-
-Module:
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #include <util/context.h>
-#include <util/message/default_message.h>
+#include <util/message.h>
 #include <util/message/format.h>
 
 bool contextt::add(const symbolt &symbol)
@@ -47,7 +39,7 @@ bool contextt::move(symbolt &symbol, symbolt *&new_symbol)
 
 void contextt::dump() const
 {
-  msg.debug("\nSymbols:");
+  log_status("\nSymbols:");
   // Do assignments based on "value".
   foreach_operand([](const symbolt &s) { s.dump(); });
 }
@@ -73,7 +65,7 @@ void contextt::erase_symbol(irep_idt name)
   symbolst::iterator it = symbols.find(name);
   if(it == symbols.end())
   {
-    msg.error("Couldn't find symbol to erase");
+    log_error("Couldn't find symbol to erase");
     abort();
   }
 
@@ -125,8 +117,8 @@ symbolt *contextt::move_symbol_to_context(symbolt &symbol)
   {
     if(move(symbol, s))
     {
-      msg.error(fmt::format(
-        "Couldn't add symbol {} to symbol table\n{}", symbol.name, symbol));
+      log_error(
+        "Couldn't add symbol {} to symbol table\n{}", symbol.name, symbol);
       abort();
     }
   }

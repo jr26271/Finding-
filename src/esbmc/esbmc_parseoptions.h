@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module: Command Line Parsing
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #ifndef CPROVER_ESBMC_PARSEOPTIONS_H
 #define CPROVER_ESBMC_PARSEOPTIONS_H
 
@@ -15,6 +7,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <util/cmdline.h>
 #include <util/options.h>
 #include <util/parseoptions.h>
+#include <util/algorithms.h>
 
 extern const struct group_opt_templ all_cmd_options[];
 
@@ -24,9 +17,8 @@ public:
   int doit() override;
   void help() override;
 
-  esbmc_parseoptionst(int argc, const char **argv, messaget &msg)
-    : parseoptions_baset(all_cmd_options, argc, argv, msg),
-      language_uit(cmdline, msg)
+  esbmc_parseoptionst(int argc, const char **argv)
+    : parseoptions_baset(all_cmd_options, argc, argv), language_uit(cmdline)
   {
   }
 
@@ -73,7 +65,7 @@ protected:
 
   bool set_claims(goto_functionst &goto_functions);
 
-  void set_verbosity_msg(messaget &message);
+  void set_verbosity_msg();
 
   uint64_t read_time_spec(const char *str);
   uint64_t read_mem_spec(const char *str);
@@ -84,6 +76,9 @@ protected:
 
   FILE *out = stdout;
   FILE *err = stderr;
+
+  std::vector<std::unique_ptr<goto_functions_algorithm>>
+    goto_preprocess_algorithms;
 
 private:
   void close_file(FILE *f)

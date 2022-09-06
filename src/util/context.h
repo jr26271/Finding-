@@ -1,11 +1,3 @@
-/*******************************************************************\
-
-Module:
-
-Author: Daniel Kroening, kroening@kroening.com
-
-\*******************************************************************/
-
 #ifndef CPROVER_CONTEXT_H
 #define CPROVER_CONTEXT_H
 
@@ -15,6 +7,7 @@ Author: Daniel Kroening, kroening@kroening.com
 #include <util/config.h>
 #include <util/symbol.h>
 #include <util/type.h>
+#include <util/message.h>
 
 typedef std::unordered_map<irep_idt, symbolt, irep_id_hash> symbolst;
 typedef std::vector<symbolt *> ordered_symbolst;
@@ -35,7 +28,7 @@ class contextt
 public:
   typedef ::symbolst symbolst;
   typedef ::ordered_symbolst ordered_symbolst;
-  explicit contextt(const messaget &msg) : msg(msg)
+  explicit contextt()
   {
   }
   ~contextt() = default;
@@ -47,7 +40,7 @@ public:
     // copy assignment operator for old frontend typechecking
     if(&rhs == this) // check self assignment
     {
-      msg.error("Context is copying itself");
+      log_error("Context is copying itself");
     }
 
     // Since the const messaget& member breaks default copy assignment operation in this class,
@@ -126,9 +119,6 @@ public:
   {
     return symbols.size();
   }
-
-protected:
-  const messaget &msg;
 
 private:
   symbolst symbols;
