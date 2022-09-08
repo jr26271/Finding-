@@ -313,6 +313,7 @@ bool clang_c_convertert::resolve_symtype_decl(
   switch(decl->getKind())
   {
   case clang::Decl::Record:
+  case clang::Decl::CXXRecord:
     if(get_struct_union_class(
          *static_cast<const clang::RecordDecl *>(decl), true))
       return true;
@@ -320,6 +321,7 @@ bool clang_c_convertert::resolve_symtype_decl(
     break;
 
   default:
+    decl->dump();
     abort();
   }
 
