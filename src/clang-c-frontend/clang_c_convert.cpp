@@ -770,7 +770,7 @@ bool clang_c_convertert::get_function_param(
   exprt &param)
 {
   typet param_type;
-  if(get_type(pd.getOriginalType(), param_type, true))
+  if(get_type(pd.getType(), param_type, true))
     return true;
 
   if(param_type.is_array())
