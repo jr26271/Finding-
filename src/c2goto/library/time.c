@@ -1,6 +1,7 @@
 #ifdef _MINGW
-
 #define __declspec /* hacks */
+#define _SECIMP
+#define time crt_time
 #endif
 
 #ifdef _MSVC

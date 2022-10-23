@@ -1,3 +1,7 @@
+#ifdef _MINGW
+// TODO: I can`t make pthread header work.
+#else
+
 #include <errno.h>
 #include <pthread.h>
 #include <stddef.h>
@@ -751,3 +755,5 @@ __ESBMC_HIDE:;
   __ESBMC_atomic_end();
   return result; // no error occurred
 }
+
+#endif
