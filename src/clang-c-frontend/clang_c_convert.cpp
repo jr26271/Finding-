@@ -3088,6 +3088,8 @@ void clang_c_convertert::get_decl_name(
     }
     break;
 
+  case clang::Decl::ClassTemplatePartialSpecialization:
+  case clang::Decl::ClassTemplateSpecialization:
   case clang::Decl::Record:
   case clang::Decl::CXXRecord:
   {
