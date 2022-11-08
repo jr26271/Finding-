@@ -7,6 +7,6 @@ typedef struct {
 main() {
   FAM *ptr = (FAM*) malloc(sizeof(FAM) + sizeof(int)*4);
   FAM deref = *ptr;
-  deref.arr[15] = 42; // out-of-bounds
+  deref.arr[34] = 42; // out-of-bounds
   free(ptr);
 }

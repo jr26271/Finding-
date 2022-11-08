@@ -1897,15 +1897,14 @@ bool clang_c_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
         typet elem_type;
         if(t.is_struct() || t.is_union())
           elem_type = to_struct_union_type(t).components()[i].type();
+
         else if(t.is_array())
           elem_type = to_array_type(t).subtype();
+
         else
           elem_type = to_vector_type(t).subtype();
 
-        if(elem_type.get("incomplete") != "true")
-          gen_typecast(ns, init, elem_type);
-        else
-            log_debug("Avoiding typecast element, {}", elem_type);
+        gen_typecast(ns, init, elem_type);
 
         inits.operands().at(i) = init;
       }

@@ -331,6 +331,7 @@ void goto_checkt::bounds_check(
 
   std::string name =
     "array bounds violated: " + array_name(ns, ind.source_value);
+
   const expr2tc &the_index = ind.index;
 
   // Lower bound access should be greather than zero
@@ -343,8 +344,36 @@ void goto_checkt::bounds_check(
   assert(is_array_type(t) || is_string_type(t) || is_vector_type(t));
 
   // We can't check the upper bound of an infinite sized array
-  if(is_array_type(t) && to_array_type(t).size_is_infinite)
-    return;
+  // or of FAMs
+  // TODO: Rewrite this in a proper way
+  if(
+    is_array_type(t) &&
+    (to_array_type(t).size_is_infinite ||
+     (to_constant_int2t(to_array_type(t).array_size).value == 0)))
+  {
+    // Is it a FAM?
+    if(is_member2t(ind.source_value))
+    {
+      auto member = to_member2t(ind.source_value);
+      if(is_symbol2t(member.source_value))
+      {
+        // Lookup for FAM
+        auto fam = ns.lookup(to_symbol2t(member.source_value).thename);
+        assert(fam);
+        // If it is a dereference, lets check it later!
+        if(fam->value.is_dereference())
+          return;
+
+        // We can add the bound check then!
+        // TODO: get the upper bound
+        return;
+      }
+      else
+        return;
+    }
+    else
+      return;
+  }
 
   // Neither FAMs
   if((to_constant_int2t(to_array_type(t).array_size).value == 0))
