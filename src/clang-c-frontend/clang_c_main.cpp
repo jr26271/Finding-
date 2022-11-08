@@ -76,13 +76,8 @@ bool clang_main(contextt &context)
 
   if(matches.size() >= 2)
   {
-    if(matches.size() == 2)
-      log_error("warning: main symbol `" + main + "' is ambiguous");
-    else
-    {
-      log_error("main symbol `" + main + "' is ambiguous");
-      return true;
-    }
+    log_error("main symbol `" + main + "' is ambiguous");
+    return true;
   }
 
   main_symbol = matches.front();
