@@ -32,12 +32,27 @@
 #include <util/migrate.h>
 #include <util/show_symbol_table.h>
 #include <util/time_stopping.h>
+#include <util/cache.h>
 
 bmct::bmct(goto_functionst &funcs, optionst &opts, contextt &_context)
   : options(opts), context(_context), ns(context)
 {
   interleaving_number = 0;
   interleaving_failed = 0;
+
+  // The next block will initialize the algorithms used for the analysis.
+  {
+    if(opts.get_bool_option("no-slice"))
+      algorithms.emplace_back(std::make_unique<simple_slice>());
+    else
+      algorithms.emplace_back(std::make_unique<symex_slicet>(options));
+
+    // Run cache if user has specified the option
+    if(options.get_bool_option("cache-asserts"))
+      // Store the set between runs
+      algorithms.emplace_back(std::make_unique<assertion_cache>(
+        config.ssa_caching_db, !options.get_bool_option("forward-condition")));
+  }
 
   if(options.get_bool_option("smt-during-symex"))
   {
@@ -568,15 +583,12 @@ smt_convt::resultt bmct::run_thread(std::shared_ptr<symex_target_equationt> &eq)
 
   try
   {
-    fine_timet slice_start = current_time();
-    BigInt ignored = slice(eq);
-
-    fine_timet slice_stop = current_time();
-
-    log_status(
-      "Slicing time: {}s (removed {} assignments)",
-      time2string(slice_stop - slice_start),
-      ignored);
+    BigInt ignored;
+    for(auto &a : algorithms)
+    {
+      a->run(eq->SSA_steps);
+      ignored += a->ignored();
+    }
 
     if(
       options.get_bool_option("program-only") ||
