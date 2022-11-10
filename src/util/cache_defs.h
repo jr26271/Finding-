@@ -7,6 +7,9 @@
 using assert_pair = std::pair<expr2tc, expr2tc>;
 using assert_db = std::unordered_set<assert_pair>;
 
+using crc_hash = unsigned long long;
+using crc_pair = std::pair<crc_hash, crc_hash>;
+using crc_db = std::set<crc_pair>;
 namespace std
 {
 template <>

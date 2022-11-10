@@ -16,7 +16,7 @@
 class assertion_cache : public ssa_step_algorithm
 {
 public:
-  assertion_cache(assert_db &db, bool trivial_value)
+  assertion_cache(crc_db &db, bool trivial_value)
     : ssa_step_algorithm(true), db(db), trivial_value(trivial_value)
   {
   }
@@ -30,7 +30,7 @@ public:
   }
 
 protected:
-  assert_db &db;
+  crc_db &db;
   /// value to be set for  the COND
   bool trivial_value;
 

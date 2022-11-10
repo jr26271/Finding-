@@ -5,7 +5,7 @@
 
 void assertion_cache::run_on_assert(symex_target_equationt::SSA_stept &step)
 {
-  auto [it, ins] = db.emplace(std::make_pair(step.cond, step.guard));
+  auto [it, ins] = db.emplace(std::make_pair(step.cond->do_crc(), step.guard->do_crc()));
   if(!ins)
   {
     log_debug("Cache hits: {}", ++hits);

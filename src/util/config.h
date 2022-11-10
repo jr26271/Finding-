@@ -111,7 +111,7 @@ public:
   static triple host();
 
   // For caching ssa assertions
-  assert_db ssa_caching_db;
+  crc_db ssa_caching_db;
 };
 
 extern configt config;
