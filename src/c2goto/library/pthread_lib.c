@@ -78,7 +78,7 @@ int insert_key_value(pthread_key_t key, const void *value)
   l->thread = __ESBMC_get_thread_id();
   l->key = key;
   l->value = value;
-  l->next = (head == NULL) ? NULL : head;
+  l->next = head;
   head = l;
   return 0;
 }
@@ -90,8 +90,8 @@ __ESBMC_HIDE:;
   __ESBMC_thread_key *l = head;
   while(l != NULL && l->thread != __ESBMC_get_thread_id())
     l = l->next;
-  return ((l == NULL) ? 0 : l);
   __ESBMC_atomic_end();
+  return ((l == NULL) ? 0 : l);
 }
 
 int delete_key(__ESBMC_thread_key *l)
@@ -111,8 +111,8 @@ __ESBMC_HIDE:;
   else if(l->next != NULL)
     head = l->next;
   free(l);
-  return 0;
   __ESBMC_atomic_end();
+  return 0;
 }
 
 /************************** Thread creation and exit **************************/

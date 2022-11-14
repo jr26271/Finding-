@@ -152,8 +152,6 @@ void clang_c_languaget::build_compiler_args(const std::string &tmp_dir)
   compiler_args.emplace_back(
     "-D__builtin_umulll_overflow=__ESBMC_overflow_umulll");
   compiler_args.emplace_back(
-    "-D__sync_fetch_and_add=__ESBMC_sync_fetch_and_add");
-  compiler_args.emplace_back(
     "-D__builtin_constant_p=__ESBMC_builtin_constant_p");
 
   compiler_args.emplace_back("-D__builtin_memcpy=memcpy");
@@ -319,11 +317,15 @@ int __ESBMC_rounding_mode = 0;
 
 void *__ESBMC_memset(void *, int, unsigned int);
 
+void __ESBMC_finish_formula();
+
 // Forward decs for pthread main thread begin/end hooks. Because they're
 // pulled in from the C library, they need to be declared prior to pulling
 // them in, for type checking.
 void pthread_start_main_hook(void);
 void pthread_end_main_hook(void);
+
+void __atexit_handler(void);
 
 // Forward declarations for nondeterministic types.
 int nondet_int();
@@ -376,7 +378,6 @@ _Bool __ESBMC_overflow_smulll(long long int, long long int, long long int *);
 _Bool __ESBMC_overflow_umul(unsigned int, unsigned int, unsigned int *);
 _Bool __ESBMC_overflow_umull(unsigned long int, unsigned long int, unsigned long int *);
 _Bool __ESBMC_overflow_umulll(unsigned long long int, unsigned long long int, unsigned long long int *);
-int __ESBMC_sync_fetch_and_add(int*, int);
 int __ESBMC_builtin_constant_p(int);
 
 // This is causing problems when using the C++ frontend. It needs to be rewritten

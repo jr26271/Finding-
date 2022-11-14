@@ -8,15 +8,42 @@
 #undef atol
 #undef getenv
 
+unsigned short atexit_index = 0;
+void (*atexit_func[32])();
+
+void __atexit_handler()
+{
+  unsigned short i = atexit_index;
+  for(; i > 0; --i)
+    atexit_func[i - 1]();
+}
+
+int atexit(void (*func)(void))
+{
+  atexit_func[atexit_index] = func;
+  ++atexit_index;
+  return 0;
+}
+
 #pragma clang diagnostic push
 #pragma GCC diagnostic ignored "-Winvalid-noreturn"
-void exit(int status)
+void exit(int)
 {
+  __atexit_handler();
+  __ESBMC_finish_formula();
   __ESBMC_assume(0);
 }
 
 void abort(void)
 {
+  __atexit_handler();
+  __ESBMC_finish_formula();
+  __ESBMC_assume(0);
+}
+
+void _Exit(int)
+{
+  __ESBMC_finish_formula();
   __ESBMC_assume(0);
 }
 #pragma clang diagnostic pop
