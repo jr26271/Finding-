@@ -1211,6 +1211,7 @@ void dereferencet::construct_from_const_struct_offset(
         if(is_symbol2t(value) && is_read(mode))
         {
           auto fam = ns.lookup(to_symbol2t(value).thename);
+          if(fam->value.is_nil()) return;
           //assert(fam.is_struct());
           auto last_operand =
             to_array_type(fam->value.operands().back().type()).size();
@@ -1946,7 +1947,7 @@ void dereferencet::bad_base_type_failure(
   std::stringstream ss;
   ss << "Object accessed with incompatible base type. Wanted " << wants
      << " but got " << have;
-  dereference_failure("Memory model", ss.str(), guard);
+  //8dereference_failure("Memory model", ss.str(), guard);
 }
 
 void dereferencet::alignment_failure(
