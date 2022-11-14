@@ -1098,6 +1098,7 @@ void goto_symext::intrinsic_memset(
   if(ex_state.cur_state->guard.is_false())
     return;
 
+
   // Define a local function for translating to calling the unwinding C
   // implementation of memset
   auto bump_call = [this, &func_call]() -> void {
@@ -1114,6 +1115,12 @@ void goto_symext::intrinsic_memset(
     symex_function_call(newcall);
     return;
   };
+
+  if(!config.options.get_bool_option("optmized-memset")) {
+    bump_call();
+    return;
+  }
+
 
   /* Get the arguments
      * arg0: ptr to object
