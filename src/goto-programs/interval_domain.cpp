@@ -85,18 +85,6 @@ void interval_domaint::transform(
   }
 }
 
-/// Sets *this to the mathematical join between the two domains. This can be
-/// thought of as an abstract version of union; *this is increased so that it
-/// contains all of the values that are represented by b as well as its original
-/// intervals. The result is an overapproximation, for example:
-/// "[0,1]".join("[3,4]") --> "[0,4]" includes 2 which isn't in [0,1] or [3,4].
-///
-///          Join is used in several places, the most significant being
-///          merge, which uses it to bring together two different paths
-///          of analysis.
-/// \par parameters: The interval domain, b, to join to this domain.
-/// \return True if the join increases the set represented by *this, False if
-///   there is no change.
 bool interval_domaint::join(const interval_domaint &b)
 {
   if(b.bottom)
@@ -159,6 +147,15 @@ void interval_domaint::havoc_rec(const expr2tc &expr)
   {
     havoc_rec(to_typecast2t(expr).from);
   }
+  else if(is_code_decl2t(expr))
+  {
+    irep_idt identifier = to_code_decl2t(expr).value;
+
+    if(is_bv_type(expr))
+      int_map.erase(identifier);
+  }
+  else
+    log_debug("[havoc_rec] Missing support: {}", *expr);
 }
 
 void interval_domaint::assume_rec(
@@ -195,6 +192,8 @@ void interval_domaint::assume_rec(
 
   if(is_symbol2t(lhs) && is_constant_number(rhs))
   {
+    // Example: a: [-2, 10] and we are evaluating a <= 6
+
     irep_idt lhs_identifier = to_symbol2t(lhs).thename;
 
     if(is_bv_type(lhs) && is_bv_type(rhs))
@@ -203,13 +202,16 @@ void interval_domaint::assume_rec(
       if(id == expr2t::lessthan_id)
         --tmp;
       integer_intervalt &ii = int_map[lhs_identifier];
+      // li should be [-2, 10]
       ii.make_le_than(tmp);
+      // li should be [-2, 6]
       if(ii.is_bottom())
         make_bottom();
     }
   }
   else if(is_constant_number(lhs) && is_symbol2t(rhs))
   {
+    // Example: a: [-2, 10] and we are evaluating 3 <= a
     irep_idt rhs_identifier = to_symbol2t(rhs).thename;
 
     if(is_bv_type(lhs) && is_bv_type(rhs))
@@ -218,7 +220,9 @@ void interval_domaint::assume_rec(
       if(id == expr2t::lessthan_id)
         ++tmp;
       integer_intervalt &ii = int_map[rhs_identifier];
+      // li: [-2, 10]
       ii.make_ge_than(tmp);
+      // li: [3, 10]
       if(ii.is_bottom())
         make_bottom();
     }
@@ -227,14 +231,13 @@ void interval_domaint::assume_rec(
   {
     irep_idt lhs_identifier = to_symbol2t(lhs).thename;
     irep_idt rhs_identifier = to_symbol2t(rhs).thename;
-
     if(is_bv_type(lhs) && is_bv_type(rhs))
     {
       integer_intervalt &lhs_i = int_map[lhs_identifier];
       integer_intervalt &rhs_i = int_map[rhs_identifier];
-      lhs_i.meet(rhs_i);
-      rhs_i = lhs_i;
-      if(rhs_i.is_bottom())
+
+      integer_intervalt::contract_interval_le(lhs_i, rhs_i);
+      if(rhs_i.is_bottom() || lhs_i.is_bottom())
         make_bottom();
     }
   }
@@ -287,6 +290,7 @@ void interval_domaint::assume_rec(const expr2tc &cond, bool negation)
   {
     assume_rec(to_not2t(cond).value, !negation);
   }
+  // de morgan
   else if(is_and2t(cond))
   {
     if(!negation)
@@ -297,6 +301,8 @@ void interval_domaint::assume_rec(const expr2tc &cond, bool negation)
     if(negation)
       cond->foreach_operand([this](const expr2tc &e) { assume_rec(e, true); });
   }
+  else
+    log_debug("[assume_rec] Missing support: {}", *cond);
 }
 
 void interval_domaint::dump() const
@@ -305,12 +311,12 @@ void interval_domaint::dump() const
   output(oss);
   log_debug("{}", oss.str());
 }
-expr2tc interval_domaint::make_expression(const expr2tc &expr) const
+expr2tc interval_domaint::make_expression(const expr2tc &symbol) const
 {
-  assert(is_symbol2t(expr));
+  assert(is_symbol2t(symbol));
 
-  symbol2t src = to_symbol2t(expr);
-  if(is_bv_type(expr))
+  symbol2t src = to_symbol2t(symbol);
+  if(is_bv_type(symbol))
   {
     int_mapt::const_iterator i_it = int_map.find(src.thename);
     if(i_it == int_map.end())
@@ -327,7 +333,7 @@ expr2tc interval_domaint::make_expression(const expr2tc &expr) const
     if(interval.singleton())
     {
       expr2tc value = from_integer(interval.upper, src.type);
-      expr2tc new_expr = expr;
+      expr2tc new_expr = symbol;
       c_implicit_typecast_arithmetic(
         new_expr, value, *migrate_namespace_lookup);
       conjuncts.push_back(equality2tc(new_expr, value));
@@ -337,7 +343,7 @@ expr2tc interval_domaint::make_expression(const expr2tc &expr) const
       if(interval.upper_set)
       {
         expr2tc value = from_integer(interval.upper, src.type);
-        expr2tc new_expr = expr;
+        expr2tc new_expr = symbol;
         c_implicit_typecast_arithmetic(
           new_expr, value, *migrate_namespace_lookup);
         conjuncts.push_back(lessthanequal2tc(new_expr, value));
@@ -346,7 +352,7 @@ expr2tc interval_domaint::make_expression(const expr2tc &expr) const
       if(interval.lower_set)
       {
         expr2tc value = from_integer(interval.lower, src.type);
-        expr2tc new_expr = expr;
+        expr2tc new_expr = symbol;
         c_implicit_typecast_arithmetic(
           new_expr, value, *migrate_namespace_lookup);
         conjuncts.push_back(lessthanequal2tc(value, new_expr));
@@ -358,24 +364,6 @@ expr2tc interval_domaint::make_expression(const expr2tc &expr) const
 
   return gen_true_expr();
 }
-
-/// Uses the abstract state to simplify a given expression using context-
-/// specific information.
-/// \par parameters: The expression to simplify.
-/// \return A simplified version of the expression.
-/*
- * This implementation is aimed at reducing assertions to true, particularly
- * range checks for arrays and other bounds checks.
- *
- * Rather than work with the various kinds of exprt directly, we use assume,
- * join and is_bottom.  It is sufficient for the use case and avoids duplicating
- * functionality that is in assume anyway.
- *
- * As some expressions (1<=a && a<=2) can be represented exactly as intervals
- * and some can't (a<1 || a>2), the way these operations are used varies
- * depending on the structure of the expression to try to give the best results.
- * For example negating a disjunction makes it easier for assume to handle.
- */
 
 bool interval_domaint::ai_simplify(expr2tc &condition, const namespacet &ns)
   const
