@@ -1809,7 +1809,7 @@ unsigned long smt_convt::calculate_array_domain_width(const array_type2t &arr)
     constant_int2tc thesize = arr.array_size;
     if(thesize->value != 0)
         return size_to_bit_width(thesize->value.to_uint64());
-    thesize->dump();
+    //thesize->dump();
     log_debug("Found FAM in domain width calculation, new size {}", config.ansi_c.word_size);
   }
 

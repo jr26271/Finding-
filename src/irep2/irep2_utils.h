@@ -646,7 +646,7 @@ inline expr2tc get_fam_size(const expr2tc e)
 {
     assert(is_fam(e->type));
     auto last_member = to_constant_struct2t(e).datatype_members.back();
-    last_member->dump();
+    //last_member->dump();
     return expr2tc();
     //return to_array_type(last_member->type).array_size;
 }
