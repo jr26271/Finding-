@@ -1874,8 +1874,8 @@ bool clang_c_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
         log_debug(
           "Initializing some incomplete array, array will be initialized with "
           "{}", init_stmt.getNumInits());
-        t.dump();
-        init_stmt.dump();
+        //t.dump();
+        //init_stmt.dump();
       }
 
         unsigned int num = init_stmt.getNumInits();

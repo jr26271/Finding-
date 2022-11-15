@@ -488,7 +488,7 @@ expr2tc dereferencet::dereference(
     known_exhaustive &= !(is_unknown2t(target) || is_invalid2t(target));
 
   if(is_struct_type(type)) {
-    log_warning("FAM dereference!");
+    //log_warning("FAM dereference!");
 
   }
 
@@ -1219,7 +1219,6 @@ void dereferencet::construct_from_const_struct_offset(
             to_constant_expr(last_operand).get_value().as_string().c_str(), 2);
           auto limit = size * type->get_width();
           log_debug("Limit: {}", limit);
-          fam->dump();
           if((new_offs->value + type->get_width()) > limit)
           {
             dereference_failure(
@@ -2354,9 +2353,7 @@ void dereferencet::check_data_obj_access(
   if(is_fam(value->type))
   {
       log_debug("checking fam acess...");
-      value->dump();
-      src_offset->dump();
-      type->dump();
+     
     return; // we can't compute the size here
   }
 
