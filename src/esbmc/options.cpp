@@ -216,6 +216,7 @@ const struct group_opt_templ all_cmd_options[] = {
      NULL,
      "encode tuples using our tuple to symbol API"},
     {"array-flattener", NULL, "encode arrays using our array API"},
+     {"optmized-memset", NULL, "optimize memset function"},
     {"no-return-value-opt",
      NULL,
      "disable return value optimization to compute the stack size"}}},

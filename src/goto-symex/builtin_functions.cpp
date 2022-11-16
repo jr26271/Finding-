@@ -1115,6 +1115,13 @@ void goto_symext::intrinsic_memset(
     return;
   };
 
+  if(!config.options.get_bool_option("optmized-memset")) {
+    bump_call();
+    return;
+  }
+
+
+
   /* Get the arguments
      * arg0: ptr to object
      * arg1: int for the new byte value
