@@ -482,7 +482,7 @@ void goto_convertt::do_function_call_symbol(
 
   // If the symbol is not nil, i.e., the user defined the expected behaviour of
   // the builtin function, we should honour the user function and call it
-  if(symbol->value.is_not_nil())
+  if(symbol->value.is_not_nil() && symbol->name.as_string() != "__VERIFIER_assert")
   {
     // insert function call
     code_function_callt function_call;
@@ -499,7 +499,7 @@ void goto_convertt::do_function_call_symbol(
 
   bool is_assume =
     (base_name == "__ESBMC_assume") || (base_name == "__VERIFIER_assume");
-  bool is_assert = (base_name == "assert");
+  bool is_assert = (base_name == "assert") ||  (base_name == "__VERIFIER_assert");
 
   if(is_assume || is_assert)
   {
@@ -537,7 +537,7 @@ void goto_convertt::do_function_call_symbol(
       abort();
     }
   }
-  else if(base_name == "__ESBMC_assert")
+  else if(base_name == "__ESBMC_assert" || base_name == "__VERIFIER_assert")
   {
     // 1 argument --> Default assertion
     // 2 arguments --> Normal assertion + MSG
