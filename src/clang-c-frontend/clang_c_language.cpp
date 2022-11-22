@@ -290,6 +290,7 @@ void __ESBMC_atomic_begin();
 void __ESBMC_atomic_end();
 /** Explicitly initialize a new object */
 void __ESBMC_init_object(void*);
+#define __ESBMC_init_var __ESBMC_init_object
 
 int __ESBMC_abs(int);
 long int __ESBMC_labs(long int);
