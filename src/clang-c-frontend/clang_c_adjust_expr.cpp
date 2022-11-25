@@ -834,7 +834,7 @@ void clang_c_adjust::do_special_functions(side_effect_expr_function_callt &expr)
       expr.swap(nan_expr);
     }
     else if(
-      identifier == "abs" || identifier == "labs" || identifier == "llabs" ||
+      identifier == "abs" || identifier == "labs" || identifier == "llabs" || identifier == "imaxabs" ||
       compare_float_suffix(identifier, "fabs") ||
       compare_unscore_builtin(identifier, "fabs"))
     {
