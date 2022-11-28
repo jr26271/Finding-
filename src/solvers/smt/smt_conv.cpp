@@ -1765,13 +1765,14 @@ expr2tc smt_convt::fix_array_idx(const expr2tc &idx, const type2tc &arr_sort)
     if(index_value >= limit)
     {
       // TODO: Maybe we should propagate an invalid expression here?
-      log_error(
-        "ESBMC encodes array domains by the nearest power of 2. "
+      if(config.options.get_bool_option("no-bounds-check") || config.options.get_bool_option("no-pointer-check"))
+      log_warning(
+        "[warning] ESBMC encodes array domains by the nearest power of 2. "
+        "Consider increasing it or enabling bounds and pointer checks.\n"
         "Current array has a index limit of {}. \nArray: {}\nIndex: {}",
         limit,
         *arr_sort,
         *idx);
-      abort();
     }
   }
 
