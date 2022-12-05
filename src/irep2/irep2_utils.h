@@ -351,11 +351,11 @@ inline expr2tc gen_zero(const type2tc &type, bool array_as_array_of = false)
   {
     auto union_type = to_union_type(type);
 
-    assert(!union_type.members.empty());
-    std::vector<expr2tc> members = {
-      gen_zero(union_type.members.front(), array_as_array_of)};
+    std::vector<expr2tc> members;
+    for(auto const &member_type : union_type.members)
+      members.push_back(gen_zero(member_type, array_as_array_of));
 
-    return constant_union2tc(type, union_type.member_names.front(), members);
+    return constant_union2tc(type, members);
   }
 
   default:
@@ -621,19 +621,18 @@ inline expr2tc distribute_vector_operation(
  */
 inline bool is_fam(const type2tc t)
 {
-    if(is_struct_type(t))
+  if(is_struct_type(t))
+  {
+    auto last_member = to_struct_type(t).members.back();
+    if(is_array_type(last_member))
     {
-        auto last_member = to_struct_type(t).members.back();
-        if(is_array_type(last_member))
-        {
-            auto size = to_array_type(last_member).array_size;
-            // This size is from the type, it should always be a constant
-            assert(is_constant_int2t(size));
-            return to_constant_int2t(size).value.is_zero();
-        }
-
+      auto size = to_array_type(last_member).array_size;
+      // This size is from the type, it should always be a constant
+      assert(is_constant_int2t(size));
+      return to_constant_int2t(size).value.is_zero();
     }
-    return false;
+  }
+  return false;
 }
 
 /**
@@ -644,12 +643,11 @@ inline bool is_fam(const type2tc t)
  */
 inline expr2tc get_fam_size(const expr2tc e)
 {
-    assert(is_fam(e->type));
-    auto last_member = to_constant_struct2t(e).datatype_members.back();
-    //last_member->dump();
-    return expr2tc();
-    //return to_array_type(last_member->type).array_size;
+  assert(is_fam(e->type));
+  auto last_member = to_constant_struct2t(e).datatype_members.back();
+  //last_member->dump();
+  return expr2tc();
+  //return to_array_type(last_member->type).array_size;
 }
-
 
 #endif /* UTIL_IREP2_UTILS_H_ */

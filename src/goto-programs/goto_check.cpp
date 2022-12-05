@@ -377,7 +377,7 @@ void goto_checkt::bounds_check(
 
   // Neither FAMs
   if((to_constant_int2t(to_array_type(t).array_size).value == 0))
-      return;
+    return;
 
   const expr2tc &array_size =
     is_array_type(t) ? to_array_type(t).array_size

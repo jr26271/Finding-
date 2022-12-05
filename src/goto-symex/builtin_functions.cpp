@@ -127,6 +127,12 @@ expr2tc goto_symext::symex_mem(
 
   if(is_nil_type(type))
     type = char_type2();
+  else if(is_union_type(type))
+  {
+    // Filter out creation of instantiated unions. They're now all byte arrays.
+    size_is_one = false;
+    type = char_type2();
+  }
 
   unsigned int &dynamic_counter = get_dynamic_counter();
   dynamic_counter++;
@@ -1039,7 +1045,7 @@ inline expr2tc gen_value_by_byte(
     auto member_type = to_union_type(type).members[selected_member_index];
     member2tc member(member_type, src, name);
 
-    result->init_field = name;
+    //result->init_field = name;
     result->datatype_members[0] =
       gen_value_by_byte(member_type, member, value, num_of_bytes, offset);
     return result;
@@ -1216,7 +1222,6 @@ void goto_symext::intrinsic_memset(
 
     if(!is_constant_int2t(item_offset))
     {
-
       /* If we reached here, item_offset is not symbolic
        * and we don't know what the actual value of it is...
        *

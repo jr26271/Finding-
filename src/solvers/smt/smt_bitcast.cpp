@@ -106,12 +106,6 @@ static expr2tc flatten_to_bitvector(const expr2tc &new_expr)
     return concat_tree(0, sz, extract);
   }
 
-  if(is_union_type(new_expr))
-  {
-    size_t sz = type_byte_size_bits(new_expr->type).to_uint64();
-    return extract2tc(get_uint_type(sz), new_expr, sz - 1, 0);
-  }
-
   log_error(
     "Unrecognized type {} when flattening to bytes",
     get_type_id(*new_expr->type));
@@ -136,9 +130,16 @@ smt_astt smt_convt::convert_bitcast(const expr2tc &expr)
       new_from = flatten_to_bitvector(new_from);
 
     // from bitvectors should go through the fp api
-    if(is_bv_type(new_from) || is_union_type(new_from))
+    if(is_bv_type(new_from))
       return fp_api->mk_from_bv_to_fp(
         convert_ast(new_from), convert_sort(to_type));
+
+    if(is_union_type(new_from))
+    {
+      log_error(
+        "Unions not supported when bitcasting to fp for now\n{}", *expr);
+      abort();
+    }
   }
   else if(is_bv_type(to_type))
   {
@@ -149,7 +150,11 @@ smt_astt smt_convt::convert_bitcast(const expr2tc &expr)
       return convert_ast(flatten_to_bitvector(from));
 
     if(is_union_type(from))
-      return convert_ast(from);
+    {
+      log_error(
+        "Unions not supported when bitcasting to bv for now\n{}", *expr);
+      abort();
+    }
   }
   else if(is_struct_type(to_type))
   {
@@ -166,7 +171,7 @@ smt_astt smt_convt::convert_bitcast(const expr2tc &expr)
     if(is_array_type(new_from))
       new_from = flatten_to_bitvector(new_from);
 
-    if(is_bv_type(new_from) || is_union_type(new_from))
+    if(is_bv_type(new_from))
     {
       const struct_type2t &structtype = to_struct_type(to_type);
 
@@ -186,11 +191,13 @@ smt_astt smt_convt::convert_bitcast(const expr2tc &expr)
 
       return convert_ast(constant_struct2tc(to_type, fields));
     }
-  }
-  else if(is_union_type(to_type))
-  {
-    if(is_bv_type(from))
-      return convert_ast(from);
+
+    if(is_union_type(new_from))
+    {
+      log_error(
+        "Unions not supported when bitcasting to struct for now\n{}", *expr);
+      abort();
+    }
   }
   else if(is_array_type(to_type))
   {
@@ -205,7 +212,7 @@ smt_astt smt_convt::convert_bitcast(const expr2tc &expr)
     if(is_struct_type(new_from))
       new_from = flatten_to_bitvector(new_from);
 
-    if(is_bv_type(new_from) || is_union_type(new_from))
+    if(is_bv_type(new_from))
     {
       // TODO: handle multidimensional arrays
       assert(
@@ -234,6 +241,13 @@ smt_astt smt_convt::convert_bitcast(const expr2tc &expr)
       }
 
       return convert_ast(constant_array2tc(to_type, elems));
+    }
+
+    if(is_union_type(new_from))
+    {
+      log_error(
+        "Unions not supported when bitcasting to struct for now\n{}", *expr);
+      abort();
     }
   }
 

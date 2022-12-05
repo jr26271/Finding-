@@ -94,7 +94,7 @@ jobs:
       - name: Get current folder and files
         run: pwd && ls
       - name: Configure CMake
-        run: mkdir build && cd build && cmake .. -GNinja -DENABLE_WERROR=On -DENABLE_CSMITH=On -DBUILD_TESTING=On -DENABLE_REGRESSION=On -DBUILD_STATIC=Off -DClang_DIR=$PWD/../clang -DLLVM_DIR=$PWD/../clang -DBoolector_DIR=$PWD/../boolector-release -DZ3_DIR=$PWD/../z3 -DC2GOTO_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -DCMAKE_INSTALL_PREFIX:PATH=$PWD/../release -DCMAKE_BUILD_TYPE=Debug -DENABLE_SOLIDITY_FRONTEND=On -DENABLE_JIMPLE_FRONTEND=On
+        run: mkdir build && cd build && cmake .. -GNinja -DENABLE_WERROR=Off -DENABLE_CSMITH=On -DBUILD_TESTING=On -DENABLE_REGRESSION=On -DBUILD_STATIC=Off -DClang_DIR=$PWD/../clang -DLLVM_DIR=$PWD/../clang -DBoolector_DIR=$PWD/../boolector-release -DZ3_DIR=$PWD/../z3 -DC2GOTO_SYSROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -DCMAKE_INSTALL_PREFIX:PATH=$PWD/../release -DCMAKE_BUILD_TYPE=Debug -DENABLE_SOLIDITY_FRONTEND=On -DENABLE_JIMPLE_FRONTEND=On
       - name: Build ESBMC
         run: cd build && cmake --build . && cmake --install .
       - uses: actions/upload-artifact@v1
@@ -140,7 +140,7 @@ jobs:
     - name: vcpkg integrate
       run: vcpkg.exe integrate install
     - name: Install Boost
-      run: vcpkg.exe install boost-filesystem:x64-Windows boost-date-time:x64-windows boost-test:x64-windows boost-multi-index:x64-windows boost-crc:x64-windows boost-property-tree:x64-windows boost-uuid:x64-windows boost-program-options:x64-windows boost-iostreams:x64-windows
+      run: vcpkg.exe install boost-filesystem:x64-Windows boost-multiprecision:x64-Windows boost-date-time:x64-windows boost-test:x64-windows boost-multi-index:x64-windows boost-crc:x64-windows boost-property-tree:x64-windows boost-uuid:x64-windows boost-program-options:x64-windows boost-iostreams:x64-windows
     - name: Prepare Environment
       run: .\scripts\configure_environment.ps1
     - name: Check environment

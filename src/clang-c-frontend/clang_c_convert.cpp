@@ -873,8 +873,8 @@ bool clang_c_convertert::get_type(const clang::Type &the_type, typet &new_type)
 
     if(!val.getSExtValue()) // 0-sized array will be handled as incomplete
     {
-        log_debug("Dealing with 0-size array");
-        new_type.set("incomplete", "true");
+      log_debug("Dealing with 0-size array");
+      new_type.set("incomplete", "true");
     }
     break;
   }
@@ -1873,12 +1873,13 @@ bool clang_c_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
       {
         log_debug(
           "Initializing some incomplete array, array will be initialized with "
-          "{}", init_stmt.getNumInits());
+          "{}",
+          init_stmt.getNumInits());
         //t.dump();
         //init_stmt.dump();
       }
 
-        unsigned int num = init_stmt.getNumInits();
+      unsigned int num = init_stmt.getNumInits();
       for(unsigned int i = 0, j = 0; (i < inits.operands().size() && j < num);
           ++i)
       {
