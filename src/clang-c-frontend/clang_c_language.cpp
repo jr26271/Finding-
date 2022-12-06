@@ -310,22 +310,24 @@ unsigned __ESBMC_alloc_size[1];
 // Get object size
 unsigned __ESBMC_get_object_size(const void *);
 
-
 _Bool __ESBMC_is_little_endian();
 
 int __ESBMC_rounding_mode = 0;
 
 void *__ESBMC_memset(void *, int, unsigned int);
 
+// Calls goto_symext::add_memory_leak_checks() which adds memory leak checks
+// if it's enabled
 void __ESBMC_memory_leak_checks();
 
-// Forward decs for pthread main thread begin/end hooks. Because they're
+// Forward decls for pthread main thread begin/end hooks. Because they're
 // pulled in from the C library, they need to be declared prior to pulling
 // them in, for type checking.
-void pthread_start_main_hook(void);
-void pthread_end_main_hook(void);
+void __ESBMC_pthread_start_main_hook(void);
+void __ESBMC_pthread_end_main_hook(void);
 
-void __atexit_handler(void);
+// Forward decls
+void __ESBMC_atexit_handler(void);
 
 // Forward declarations for nondeterministic types.
 int nondet_int();

@@ -744,29 +744,12 @@ void goto_symext::intrinsic_memset(
   if(ex_state.cur_state->guard.is_false())
     return;
 
-  // Define a local function for translating to calling the unwinding C
-  // implementation of memset
-  auto bump_call = [this, &func_call]() -> void {
-    // We're going to execute a function call, and that's going to mess with
-    // the program counter. Set it back *onto* pointing at this intrinsic, so
-    // symex_function_call calculates the right return address. Misery.
-    cur_state->source.pc--;
-
-    expr2tc newcall = func_call.clone();
-    code_function_call2t &mutable_funccall = to_code_function_call2t(newcall);
-    mutable_funccall.function =
-      symbol2tc(get_empty_type(), "c:@F@__memset_impl");
-    // Execute call
-    symex_function_call(newcall);
-    return;
-  };
-
   // Skip if the operand is not zero. Because honestly, there's very little
   // point.
   cur_state->rename(value);
   if(!is_constant_int2t(value) || to_constant_int2t(value).value != 0)
   {
-    bump_call();
+    bump_call(func_call, "c:@F@__memset_impl");
     return;
   }
 
@@ -999,7 +982,7 @@ void goto_symext::intrinsic_memset(
   }
   else
   {
-    bump_call();
+    bump_call(func_call, "c:@F@__memset_impl");
   }
 }
 
@@ -1022,4 +1005,21 @@ void goto_symext::intrinsic_get_object_size(
   expr2tc ret_ref = func_call.ret;
   dereference(ret_ref, dereferencet::READ);
   symex_assign(code_assign2tc(ret_ref, obj_size), false, cur_state->guard);
+}
+
+void goto_symext::bump_call(
+  const code_function_call2t &func_call,
+  const std::string &symname)
+{
+  // We're going to execute a function call, and that's going to mess with
+  // the program counter. Set it back *onto* pointing at this intrinsic, so
+  // symex_function_call calculates the right return address. Misery.
+  cur_state->source.pc--;
+
+  expr2tc newcall = func_call.clone();
+  code_function_call2t &mutable_funccall = to_code_function_call2t(newcall);
+  mutable_funccall.function = symbol2tc(get_empty_type(), symname);
+  // Execute call
+  symex_function_call(newcall);
+  return;
 }
