@@ -46,6 +46,8 @@ struct messaget
     {
       if(lvl == VerbosityLevel::Error)
         fmt::print(f, "ERROR: ");
+      if(lvl == VerbosityLevel::Warning)
+        fmt::print(f, "WARNING: ");
       fmt::print(f, std::forward<Args>(args)...);
       fmt::print(f, "\n");
     }
