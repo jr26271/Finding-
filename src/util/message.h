@@ -44,6 +44,9 @@ struct messaget
     template <typename... Args>
     static void println(FILE *f, VerbosityLevel lvl, Args &&...args)
     {
+      if(config.options.get_bool_option("quiet"))
+        return;
+
       if(lvl == VerbosityLevel::Error)
         fmt::print(f, "ERROR: ");
       if(lvl == VerbosityLevel::Warning)
