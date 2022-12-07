@@ -2080,7 +2080,8 @@ expr2tc dereferencet::stitch_together_from_byte_array(
   const expr2tc &offset,
   const guardt & /* guard */)
 {
-  assert(num_bytes != 0);
+  //assert(num_bytes != 0);
+  if(!num_bytes) num_bytes = 1;
 
   /* TODO: check array bounds, (alignment?) */
   expr2tc *bytes = extract_bytes_from_array(byte_array, num_bytes, offset);
