@@ -631,6 +631,7 @@ void clang_c_adjust::adjust_side_effect_function_call(
         }
 
         poly.identifier(identifier_with_type);
+        poly.name(f_op.name());
         poly.location() = expr.location();
 
         symbolt *function_symbol_with_type =
