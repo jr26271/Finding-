@@ -28,17 +28,8 @@ z3_convt::z3_convt(const namespacet &_ns, const optionst &_options)
     array_iface(true, true),
     fp_convt(this),
     z3_ctx(),
-    solver((z3::tactic(z3_ctx, "simplify") & z3::tactic(z3_ctx, "solve-eqs") &
-            z3::tactic(z3_ctx, "simplify") & z3::tactic(z3_ctx, "smt"))
-             .mk_solver())
+    solver(z3_ctx)
 {
-  z3::params p(z3_ctx);
-  p.set("relevancy", 0U);
-  p.set("model", true);
-  p.set("proof", false);
-  solver.set(p);
-
-  Z3_set_ast_print_mode(z3_ctx, Z3_PRINT_SMTLIB2_COMPLIANT);
   Z3_set_error_handler(z3_ctx, error_handler);
 }
 
