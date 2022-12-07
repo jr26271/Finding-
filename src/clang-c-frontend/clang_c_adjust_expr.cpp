@@ -633,7 +633,8 @@ void clang_c_adjust::adjust_side_effect_function_call(
         poly.identifier(identifier_with_type);
         poly.location() = expr.location();
 
-        symbolt *function_symbol_with_type = context.find_symbol(identifier_with_type);
+        symbolt *function_symbol_with_type =
+          context.find_symbol(identifier_with_type);
         if(!function_symbol_with_type)
         {
           for(std::size_t i = 0; i < arguments.size(); ++i)
@@ -664,8 +665,8 @@ void clang_c_adjust::adjust_side_effect_function_call(
           new_symbol.name = f_op.name();
           new_symbol.location = expr.location();
           new_symbol.type = poly.type();
-          code_blockt implementation =
-            instantiate_gcc_polymorphic_builtin(identifier, to_symbol_expr(poly));
+          code_blockt implementation = instantiate_gcc_polymorphic_builtin(
+            identifier, to_symbol_expr(poly));
           new_symbol.value = implementation;
 
           context.add(new_symbol);
