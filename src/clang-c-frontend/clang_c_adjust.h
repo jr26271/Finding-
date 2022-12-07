@@ -65,6 +65,10 @@ protected:
   exprt is_gcc_polymorphic_builtin(
     const irep_idt &identifier,
     const exprt::operandst &arguments);
+
+  code_blockt instantiate_gcc_polymorphic_builtin(
+    const irep_idt &identifier,
+    const symbol_exprt &function_symbol);
 };
 
 #endif /* CLANG_C_FRONTEND_CLANG_C_ADJUST_H_ */
