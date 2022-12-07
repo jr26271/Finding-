@@ -61,6 +61,10 @@ protected:
   void adjust_argc_argv(const symbolt &main_symbol);
 
   void do_special_functions(side_effect_expr_function_callt &expr);
+
+  exprt is_gcc_polymorphic_builtin(
+    const irep_idt &identifier,
+    const exprt::operandst &arguments);
 };
 
 #endif /* CLANG_C_FRONTEND_CLANG_C_ADJUST_H_ */
