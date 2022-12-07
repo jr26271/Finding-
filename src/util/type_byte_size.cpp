@@ -118,6 +118,12 @@ BigInt type_byte_size_bits(const type2tc &type)
 
     BigInt subsize = type_byte_size_bits(t2.subtype);
     const constant_int2t &arrsize_int = to_constant_int2t(arrsize);
+    log_debug("[Type size] Array contains {} elements", arrsize_int.value);
+    if( arrsize_int.value == 0)
+    {
+      log_debug("[FAM] this is probably a fam that we don't support");
+      return subsize;
+    }
     return subsize * arrsize_int.value;
   }
 
