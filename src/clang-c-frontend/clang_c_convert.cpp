@@ -2801,8 +2801,8 @@ bool clang_c_convertert::get_atomic_expr(
   side_effect_expr_function_callt fake_call;
 
   // Get the type
-  code_typet t;
-  if(get_type(atm.getType(), t.return_type()))
+  typet t;
+  if(get_type(atm.getType(), t))
     return true;
   fake_call.type() = t;
 
@@ -2945,7 +2945,6 @@ bool clang_c_convertert::get_atomic_expr(
   if(get_expr(*atm.getPtr(), ptr))
     return true;
 
-  t.arguments().push_back(code_typet::argumentt(ptr.type()));
   fake_call.arguments().push_back(ptr);
 
   // Val1
@@ -2957,7 +2956,6 @@ bool clang_c_convertert::get_atomic_expr(
     if(get_expr(*atm.getVal1(), val1))
       return true;
 
-    t.arguments().push_back(code_typet::argumentt(val1.type()));
     fake_call.arguments().push_back(val1);
   }
 
@@ -2968,7 +2966,6 @@ bool clang_c_convertert::get_atomic_expr(
     if(get_expr(*atm.getVal2(), val2))
       return true;
 
-    t.arguments().push_back(code_typet::argumentt(val2.type()));
     fake_call.arguments().push_back(val2);
   }
 
@@ -2981,7 +2978,6 @@ bool clang_c_convertert::get_atomic_expr(
     if(get_expr(*atm.getWeak(), weak))
       return true;
 
-    t.arguments().push_back(code_typet::argumentt(weak.type()));
     fake_call.arguments().push_back(weak);
   }
 
@@ -2991,7 +2987,6 @@ bool clang_c_convertert::get_atomic_expr(
     if(get_expr(*atm.getOrder(), order))
       return true;
 
-    t.arguments().push_back(code_typet::argumentt(order.type()));
     fake_call.arguments().push_back(order);
   }
 
@@ -3001,7 +2996,6 @@ bool clang_c_convertert::get_atomic_expr(
     if(get_expr(*atm.getOrderFail(), order_fail))
       return true;
 
-    t.arguments().push_back(code_typet::argumentt(order_fail.type()));
     fake_call.arguments().push_back(order_fail);
   }
 
