@@ -11,6 +11,7 @@
 #include <util/message/format.h>
 #include <util/prefix.h>
 #include <util/std_code.h>
+#include <util/type2name.h>
 
 clang_c_adjust::clang_c_adjust(contextt &_context)
   : context(_context), ns(namespacet(context))
