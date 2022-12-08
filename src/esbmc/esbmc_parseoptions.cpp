@@ -861,7 +861,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
         assert(len == sizeof(r) && "short write");
         (void)len; //ndebug
 
-        log_status("BASE CASE PROCESS FINISHED.\n");
+        log_status("Base case process finished (bug found).\n");
         return true;
       }
 
@@ -912,7 +912,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
     assert(len == sizeof(r) && "short write");
     (void)len; //ndebug
 
-    log_status("BASE CASE PROCESS FINISHED.\n");
+    log_status("Base case process finished (no bug found).\n");
     return false;
   }
 
@@ -968,7 +968,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
         assert(len == sizeof(r) && "short write");
         (void)len; //ndebug
 
-        log_status("FORWARD CONDITION PROCESS FINISHED.");
+        log_status("Forward condition process finished (safety proven).");
         return false;
       }
     }
@@ -980,7 +980,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
     assert(len == sizeof(r) && "short write");
     (void)len; //ndebug
 
-    log_status("FORWARD CONDITION PROCESS FINISHED.");
+    log_status("Forward condition process finished (safety not proven).");
     return true;
   }
 
@@ -1036,7 +1036,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
         assert(len == sizeof(r) && "short write");
         (void)len; //ndebug
 
-        log_status("INDUCTIVE STEP PROCESS FINISHED.");
+        log_status("Inductive process finished (safety proven).");
         return false;
       }
     }
@@ -1048,7 +1048,7 @@ int esbmc_parseoptionst::doit_k_induction_parallel()
     assert(len == sizeof(r) && "short write");
     (void)len; //ndebug
 
-    log_status("INDUCTIVE STEP PROCESS FINISHED.");
+    log_status("Inductive process finished (safety not proven).");
     return true;
   }
 
