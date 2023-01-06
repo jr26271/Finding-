@@ -5,6 +5,8 @@
 #include <util/std_code.h>
 #include <util/expr_util.h>
 
+#include <jimple-frontend/AST/parse_jimple.h>
+
 // (De)-Serialization helpers (from jimple_ast.h)
 void to_json(json &, const jimple_ast &)
 {
@@ -98,7 +100,9 @@ jimple_file::to_string(const jimple_file::file_type &ft) const
 }
 void jimple_file::load_file(const std::string &path)
 {
-  std::ifstream i(path);
+  parse_jimple::convert_jimple_file(path);
+
+  std::ifstream i(path + ".json");
   json j;
   i >> j;
 
