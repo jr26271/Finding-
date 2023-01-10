@@ -40,6 +40,9 @@ private:
   enum class BASE_TYPES
   {
     INT,
+    BYTE,
+    SHORT,
+    LONG,
     BOOLEAN,
     _VOID,
     OTHER
@@ -48,16 +51,17 @@ private:
   std::map<std::string, BASE_TYPES> from_map = {
     /* Basic JVM types  */
     {"int", BASE_TYPES::INT},
-    {"byte", BASE_TYPES::INT},
+    {"byte", BASE_TYPES::BYTE},
     {"char", BASE_TYPES::INT},
-    {"short", BASE_TYPES::INT},
+    {"short", BASE_TYPES::SHORT},
     {"boolean", BASE_TYPES::INT},
-    {"long", BASE_TYPES::INT},
+    {"long", BASE_TYPES::LONG},
     {"float", BASE_TYPES::INT},
     {"double", BASE_TYPES::INT},
     {"void", BASE_TYPES::_VOID},
     /* Basic Java classes that can work as primitive types */
     {"java.lang.Integer", BASE_TYPES::INT},
+    {"java.lang.Byte", BASE_TYPES::BYTE},
     {"java.util.Random",
      BASE_TYPES::
        INT}, // We dont really care about the initialization of this mode

@@ -10,10 +10,20 @@ void jimple_type::from_json(const json &j)
 
 typet jimple_type::get_base_type(const contextt &ctx) const
 {
+  // The size of types are taken from https://kotlinlang.org/spec/pdf/kotlin-spec.pdf
   switch(bt)
   {
+  case BASE_TYPES::BYTE:
+    return signedbv_typet(8);
+
+  case BASE_TYPES::SHORT:
+    return signedbv_typet(16);
+
   case BASE_TYPES::INT:
-    return int_type();
+    return signedbv_typet(32);
+
+  case BASE_TYPES::LONG:
+    return signedbv_typet(64);
 
   case BASE_TYPES::BOOLEAN:
     return bool_type();

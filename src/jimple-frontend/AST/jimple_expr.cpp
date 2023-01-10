@@ -18,7 +18,7 @@ exprt jimple_constant::to_exprt(
 {
   auto as_number = std::stoi(value);
   return constant_exprt(
-    integer2binary(as_number, 10), integer2string(as_number), int_type());
+    integer2binary(as_number, 10), integer2string(as_number), signedbv_typet(32));
 };
 
 void jimple_symbol::from_json(const json &j)
@@ -178,11 +178,31 @@ exprt jimple_binop::to_exprt(
   const std::string &function_name) const
 {
   auto lhs_expr = lhs->to_exprt(ctx, class_name, function_name);
+  auto rhs_expr = rhs->to_exprt(ctx, class_name, function_name);
+#if 1
+  if(binop == "cmp")
+  {
+    c_typecastt c_typecast(ctx);
+    c_typecast.implicit_typecast(rhs_expr, lhs_expr.type());
+    assert(lhs_expr.type() == rhs_expr.type());
+
+    // push 0 if the two longs are the same, 1 if value1 is greater than value2, -1 otherwise
+    auto greater = gen_binary(">", bool_type(), lhs_expr, rhs_expr);
+    auto zero = gen_zero(lhs_expr.type());
+    auto value1 = gen_one(lhs_expr.type());
+    auto value_neg1 = gen_one(lhs_expr.type());
+    value_neg1.value("-1");
+
+    auto inner_if = if_exprt(greater, value1, value_neg1);
+    auto equal = gen_binary("=", bool_type(), lhs_expr, rhs_expr);
+    return if_exprt(equal, zero, inner_if);
+  }
+#endif
   return gen_binary(
     binop,
     lhs_expr.type(),
     lhs_expr,
-    rhs->to_exprt(ctx, class_name, function_name));
+    rhs_expr);
 };
 
 void jimple_cast::from_json(const json &j)
