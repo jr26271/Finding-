@@ -78,6 +78,10 @@ void jimple_file::from_json(const json &j)
       x.get_to(m);
       to_add = std::make_shared<jimple_class_field>(m);
     }
+    else if(content_type == "Comment")
+    {
+      // Do nothing
+    }
     else
     {
       log_error("Unsupported object: {}", content_type);
@@ -165,7 +169,7 @@ exprt jimple_file::to_exprt(contextt &ctx) const
   // Add the methods and definitions
   for(auto const &field : body)
   {
-    if(!std::dynamic_pointer_cast<jimple_class_field>(field))
+    if(field && !std::dynamic_pointer_cast<jimple_class_field>(field))
     {
       field->to_exprt(ctx, name, name);
     }
