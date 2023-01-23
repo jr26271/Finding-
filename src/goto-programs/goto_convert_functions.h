@@ -28,6 +28,11 @@ public:
   void
   wallop_type(irep_idt name, typename_mapt &typenames, const irep_idt &sname);
 
+  // Note: Union Flattener at GOTO
+  void fixup_unions();
+  void fix_union_type(typet &type, bool is_pointer);
+  void fix_union_expr(exprt &expr);
+
   goto_convert_functionst(
     contextt &_context,
     optionst &_options,

@@ -86,6 +86,10 @@ const struct group_opt_templ all_cmd_options[] = {
     {"document-subgoals", NULL, "generate subgoals documentation"},
     {"no-arch", NULL, "don't set up an architecture"},
     {"no-library", NULL, "disable built-in abstract C library"},
+    {"flatten-unions",
+     NULL,
+     "flatten unions into byte arrays at GOTO (improves performance at "
+     "precision cost)"},
     {"output-goto",
      boost::program_options::value<std::string>(),
      "export generated goto program"},
