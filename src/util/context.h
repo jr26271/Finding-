@@ -11,6 +11,7 @@
 
 typedef std::unordered_map<irep_idt, symbolt, irep_id_hash> symbolst;
 typedef std::vector<symbolt *> ordered_symbolst;
+typedef std::map<std::string, std::string> inheritance_pair;
 
 typedef std::multimap<irep_idt, irep_idt> symbol_base_mapt;
 
@@ -55,6 +56,7 @@ public:
 #endif
 
   symbol_base_mapt symbol_base_map;
+  inheritance_pair inheritance;
 
   bool add(const symbolt &symbol);
   bool move(symbolt &symbol, symbolt *&new_symbol);

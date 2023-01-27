@@ -130,10 +130,12 @@ exprt jimple_file::to_exprt(contextt &ctx) const
 
   // Check if class already exists
   if(ctx.find_symbol(id) != nullptr)
-    throw "Duplicated class name";
+    log_warning("Parsing class {} again (might be a name conflict)", id);
+
 
   struct_typet t;
   t.tag(name);
+  t.name(name);
 
   auto symbol = create_jimple_symbolt(t, name, name, id);
   std::string symbol_name = symbol.id.as_string();
@@ -147,6 +149,25 @@ exprt jimple_file::to_exprt(contextt &ctx) const
 
   // Add class/interface members
   auto total_size = 0;
+
+  // Here is where we add the inherited fields
+  if(this->extends != "(No extends)")
+  {
+    ctx.inheritance[this->class_name] = extends;
+    auto symbol = ctx.find_symbol("tag-" + extends);
+    if(symbol != nullptr)
+    {
+      for(auto &component : to_struct_type(symbol->type).components())
+    {
+      t.components().push_back(component);
+      total_size += std::stoi(component.type().width().as_string());
+    }
+    }
+    else {
+      log_error("Could not found symbol {}", "tag-"+name);
+    }
+  }
+
   for(auto const &field : body)
   {
     if(std::dynamic_pointer_cast<jimple_class_field>(field))
@@ -156,11 +177,13 @@ exprt jimple_file::to_exprt(contextt &ctx) const
       tmp = field->to_exprt(ctx, name, name);
       comp.swap(tmp);
       t.components().push_back(comp);
-      total_size += std::stoi(comp.type().width().as_string());
+      if(comp.type().width().as_string() == "")
+        total_size += 64; // TODO: Pointer size
+      else
+        total_size += std::stoi(comp.type().width().as_string());
     }
   }
 
-  // Here is where we add the inherited fields
 
   // Finally, the structure is ready. Lets add it
   t.set("width", total_size);

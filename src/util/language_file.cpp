@@ -81,12 +81,52 @@ bool language_filest::typecheck(contextt &context)
   }
 
   // typecheck files
-
-  for(auto &it : filemap)
+  std::set<std::string> changed;
+  while(changed.size() < filemap.size())
   {
-    if(it.second.modules.empty())
-      if(it.second.language->typecheck(context, ""))
-        return true;
+    bool has_changed = false;
+    for(auto &it : filemap)
+    {
+      if(changed.count(it.first))
+        continue;
+
+      if(it.second.modules.empty())
+      {
+        bool error_in_typecheck = true;
+        try {
+          error_in_typecheck = it.second.language->typecheck(context, "");
+
+        }
+        catch(std::string &error)
+        {
+          log_warning("Error: {}", error);
+        }
+        catch(const char* error)
+        {
+          log_warning("Error: {}", error);
+        }
+
+        if(!error_in_typecheck)
+        {
+          log_status("Typechecked {}", it.second.filename);
+          has_changed = true;
+          changed.insert(it.first);
+        }
+        else
+          log_warning("Failed to typecheck {}", it.second.filename);
+      }
+      else {
+        log_status("Skipped {}", it.second.filename);
+        has_changed = true;
+        changed.insert(it.first);
+      }
+    }
+
+    if(!has_changed)
+    {
+      log_warning("No changes");
+      return true;
+    }
   }
 
   // typecheck modules

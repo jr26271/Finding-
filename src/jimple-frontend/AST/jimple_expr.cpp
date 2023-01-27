@@ -407,7 +407,27 @@ exprt jimple_virtual_invoke::to_exprt(
   std::ostringstream oss;
   oss << base_class << ":" << method;
 
+  log_status("Invoking function: {}", oss.str());
   auto symbol = ctx.find_symbol(oss.str());
+  if(symbol == nullptr)
+  {
+    log_error("Could not find symbol 1: {}", oss.str());
+  }
+
+  // TODO: This should be a while
+  if((symbol == nullptr) && ctx.inheritance.count(base_class))
+  {
+    oss.str("");
+    oss << ctx.inheritance[base_class] << ":" << method;
+    symbol = ctx.find_symbol(oss.str());
+  }
+
+  if(symbol == nullptr)
+  {
+    log_error("Could not find symbol 2: {}", oss.str());
+  }
+  symbol->dump();
+
   call.function() = symbol_expr(*symbol);
   if(!lhs.is_nil())
   {
@@ -421,7 +441,16 @@ exprt jimple_virtual_invoke::to_exprt(
       jimple_symbol(variable).to_exprt(ctx, class_name, function_name);
     call.arguments().push_back(this_expression);
     auto temp = get_symbol_name(base_class, method, "@this");
-    symbolt &added_symbol = *ctx.find_symbol(temp);
+    auto ptr = ctx.find_symbol(temp);
+    // TODO: This should be a while
+    if(!ptr && ctx.inheritance.count(base_class))
+    {
+      temp = get_symbol_name(ctx.inheritance[base_class], method, "@this");
+      ptr = ctx.find_symbol(temp);
+      if(!ptr)
+        log_error("Could not find the symbol");
+    }
+    symbolt &added_symbol = *ptr;
     code_assignt assign(symbol_expr(added_symbol), this_expression);
     block.operands().push_back(assign);
   }

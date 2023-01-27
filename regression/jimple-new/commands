@@ -1,0 +1,6 @@
+1. (Compile): kotlinc -include-runtime -d output.jar main.kt
+2. (Optional run): java -jar -ea ./output.jar
+3. (Extract): jar xf ./output.jar
+4. (Soot): java -cp ../soot-4.2.1-jar-with-dependencies.jar soot.Main -cp . -pp -f jimple MainKt -write-local-annotations -p jb use-original-names:true -keep-line-number -print-tags-in-output
+
+5. (Soot annotation): java -cp ../soot-4.2.1-jar-with-dependencies.jar soot.Main -cp .:../annotations-23.0.0.jar  -pp -f jimple MainKt -write-local-annotations -p jb use-original-names:true -keep-line-number -print-tags-in-output
