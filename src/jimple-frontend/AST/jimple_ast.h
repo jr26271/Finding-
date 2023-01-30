@@ -22,7 +22,7 @@ public:
    */
   void dump() const
   {
-    log_debug("{}", this->to_string());
+    log_status("{}", this->to_string());
   }
 
   /**
