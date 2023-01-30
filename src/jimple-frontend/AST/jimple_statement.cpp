@@ -334,6 +334,33 @@ void jimple_invoke::from_json(const json &j)
   method += "_" + get_hash_name();
 }
 
+static code_function_callt create_function_call(contextt &ctx, symbolt &function, std::vector<exprt> &parameters)
+  {
+    // Create a function call for allocation
+  code_function_callt call;
+  symbolt &added_symbol = *ctx.move_symbol_to_context(function);
+
+  call.function() = symbol_expr(added_symbol);
+  for(auto &p : parameters)
+    call.arguments().push_back(p);
+
+  return call;
+  }
+
+exprt jimple_invoke::invoke_intrinsic_assume(contextt &ctx,
+  const std::string &class_name,
+  const std::string &function_name) const {
+  assert(parameters.size() == 1 && "__ESBMC_assume expects one parameter only");
+  auto function = get_assume_function();
+  std::vector<exprt> parameters_expr;
+  for(auto &p : parameters)
+    parameters_expr.push_back(p->to_exprt(ctx,class_name, function_name));
+
+  code_blockt block;
+  block.operands().push_back(create_function_call(ctx, function, parameters_expr));
+  return block;
+}
+
 exprt jimple_invoke::to_exprt(
   contextt &ctx,
   const std::string &class_name,
@@ -378,6 +405,15 @@ exprt jimple_invoke::to_exprt(
   {
     code_skipt skip;
     return skip;
+  }
+
+  if(base_class == "org.sosy_lab.sv_benchmarks.Verifier")
+  {
+    // TACAS functions
+    if(method == "assume_1")
+      return invoke_intrinsic_assume(ctx,
+   class_name,
+  function_name);
   }
 
   code_blockt block;

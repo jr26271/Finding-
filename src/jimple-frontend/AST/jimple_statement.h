@@ -56,6 +56,11 @@ public:
   std::string variable =
     ""; // TODO: Specialization jimple_invoke and jimple_virtual_invoke!!!
   std::vector<std::shared_ptr<jimple_expr>> parameters;
+  protected:
+
+  exprt invoke_intrinsic_assume(contextt &ctx,
+  const std::string &class_name,
+  const std::string &function_name) const;
 };
 
 /**
@@ -146,6 +151,7 @@ public:
   std::string variable;
   std::string value;
 };
+
 
 /**
  * @brief An IF statement
