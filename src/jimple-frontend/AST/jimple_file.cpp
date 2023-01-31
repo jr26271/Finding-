@@ -32,6 +32,11 @@ std::string jimple_file::to_string() const
   oss << "\n\n";
   for(auto &x : body)
   {
+    if(x == nullptr)
+    {
+      log_warning("Skipping something at parse tree");
+      continue;
+    }
     oss << x->to_string();
     oss << "\n\n";
   }

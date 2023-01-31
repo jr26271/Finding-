@@ -150,6 +150,21 @@ protected:
     return symbol;
   }
 
+  static symbolt get_assume_function()
+  {
+    std::string func = "__ESBMC_assume";
+    code_typet code_type;
+    code_type.return_type() = empty_typet();
+    code_type.arguments().push_back(bool_typet());
+    symbolt symbol;
+    symbol.mode = "C";
+    symbol.type = code_type;
+    symbol.name = func;
+    symbol.id = func;
+    symbol.is_extern = false;
+    symbol.file_local = false;
+    return symbol;
+  }
   /**
    * @brief Get the unique method name
    *
