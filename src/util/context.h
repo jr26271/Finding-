@@ -12,6 +12,7 @@
 typedef std::unordered_map<irep_idt, symbolt, irep_id_hash> symbolst;
 typedef std::vector<symbolt *> ordered_symbolst;
 typedef std::map<std::string, std::string> inheritance_pair;
+typedef std::map<std::string, unsigned> inheritance_id;
 
 typedef std::multimap<irep_idt, irep_idt> symbol_base_mapt;
 
@@ -57,6 +58,28 @@ public:
 
   symbol_base_mapt symbol_base_map;
   inheritance_pair inheritance;
+  inheritance_id inheritance_ids;
+  unsigned class_id = 0;
+
+  // TODO: This is the worst possible way of doing this.
+  std::set<std::string> get_inherited(const std::string &name) const {
+    std::set<std::string> result;
+    result.insert(name);
+    bool changed = true;
+    while(changed)
+    {
+      changed = false;
+      for(auto v : inheritance )
+      {
+        if(result.count(v.second) && !result.count(v.first))
+        {
+          result.insert(v.first);
+          changed = true;
+        }
+      }
+    }
+    return result;
+  }
 
   bool add(const symbolt &symbol);
   bool move(symbolt &symbol, symbolt *&new_symbol);

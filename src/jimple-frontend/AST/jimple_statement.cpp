@@ -165,7 +165,28 @@ exprt jimple_assignment::to_exprt(
   c_typecast.implicit_typecast(from_expr, lhs_handle.type());
 
   code_assignt assign(lhs_handle, from_expr);
-  return assign;
+  code_blockt block;
+  block.operands().push_back(assign);
+
+  // Is it new? Let's add some extra flags
+  if(std::dynamic_pointer_cast<jimple_new>(rhs))
+  {
+    auto struct_type = gen_zero(lhs_handle.type().subtype());
+    if(struct_type.operands().size())
+    {
+      exprt deref("dereference");
+      deref.type() = lhs_handle.type().subtype();
+      deref.move_to_operands(lhs_handle);
+
+      auto value = ctx.inheritance_ids[deref.type().name().as_string()];
+      struct_type.op0() = constant_exprt(integer2binary(value, 10), integer2string(value), signedbv_typet(32));
+    member_exprt op(deref, "tag-reference", signedbv_typet(32));
+    code_assignt assign(deref, struct_type);
+    block.operands().push_back(assign);
+    }
+  }
+
+  return block;
 }
 
 /*
@@ -317,7 +338,7 @@ exprt jimple_assertion::to_exprt(
 std::string jimple_invoke::to_string() const
 {
   std::ostringstream oss;
-  oss << "Invoke: " << method;
+  oss << "Invoke: " << method << " from " << (variable != "" ? variable : base_class);
   return oss.str();
 }
 
@@ -417,19 +438,15 @@ exprt jimple_invoke::to_exprt(
   }
 
   code_blockt block;
-  code_function_callt call;
+  // Lets add the parameters
+  code_function_callt::argumentst args;
 
-  std::ostringstream oss;
-  oss << base_class << ":" << method;
-  auto symbol = ctx.find_symbol(oss.str());
-  call.function() = symbol_expr(*symbol);
-
-  if(variable != "")
+  if(is_virtual())
   {
     // Let's add @THIS
     auto this_expression =
       jimple_symbol(variable).to_exprt(ctx, class_name, function_name);
-    call.arguments().push_back(this_expression);
+    args.push_back(this_expression);
     auto temp = get_symbol_name(base_class, method, "@this");
     symbolt &added_symbol = *ctx.find_symbol(temp);
     code_assignt assign(symbol_expr(added_symbol), this_expression);
@@ -441,7 +458,7 @@ exprt jimple_invoke::to_exprt(
     // Just adding the arguments should be enough to set the parameters
     auto parameter_expr =
       parameters[i]->to_exprt(ctx, class_name, function_name);
-    call.arguments().push_back(parameter_expr);
+    args.push_back(parameter_expr);
     // Hack, manually adding parameters
     std::ostringstream oss;
     oss << "@parameter" << i;
@@ -450,9 +467,62 @@ exprt jimple_invoke::to_exprt(
     code_assignt assign(symbol_expr(added_symbol), parameter_expr);
     block.operands().push_back(assign);
   }
-  block.operands().push_back(call);
+
+  std::ostringstream oss;
+  oss << base_class << ":" << method;
+  log_status("Looking for {}", oss.str());
+  auto symbol = ctx.find_symbol(oss.str());
+  code_function_callt call;
+  call.function() = symbol_expr(*symbol);
+  call.arguments() = args;
+
+  if(!is_virtual() || method[0] == '<' )
+  {
+    block.operands().push_back(call);
+    return block;
+  }
+  auto this_expression =
+      jimple_symbol(variable).to_exprt(ctx, class_name, function_name);
+  exprt deref("dereference");
+      deref.type() = this_expression.type().subtype();
+      deref.move_to_operands(this_expression);
+
+  auto reference = constant_exprt(integer2binary(ctx.inheritance_ids[base_class], 10), integer2string(ctx.inheritance_ids[base_class]), signedbv_typet(32));
+  member_exprt op(deref, "tag-reference", signedbv_typet(32));
+  code_ifthenelset test;
+  test.cond() = equality_exprt(reference,op);
+  test.then_case() = call;
+  test.else_case() = code_skipt();
+
+
+  for(auto &C : ctx.get_inherited(base_class)) {
+    if(C == base_class)
+      continue;
+    std::ostringstream oss;
+    oss << C << ":" << method;
+    auto symbol = ctx.find_symbol(oss.str());
+    if(!symbol)
+    {
+      log_error("Could not find symbol {}", oss.str());
+      continue;
+    }
+
+    code_function_callt other_call;
+    other_call.function() = symbol_expr(*symbol);
+    other_call.arguments() = args;
+    auto reference = constant_exprt(integer2binary(ctx.inheritance_ids[C], 10), integer2string(ctx.inheritance_ids[C]), signedbv_typet(32));
+    member_exprt op(deref, "tag-reference", signedbv_typet(32));
+    code_ifthenelset code_if;
+    code_if.cond() = equality_exprt(reference,op);
+    code_if.then_case() = other_call;
+    code_if.else_case() = code_skipt();
+    block.operands().push_back(code_if);
+  }
+
+  block.operands().push_back(test);
   return block;
 }
+
 
 std::string jimple_throw::to_string() const
 {

@@ -128,6 +128,7 @@ exprt jimple_file::to_exprt(contextt &ctx) const
    * the static functions and variables, and constructor */
 
   exprt e = code_skipt();
+  ctx.inheritance_ids[this->class_name] = ctx.class_id++;
 
   std::string id, name;
   id = "tag-" + this->class_name;
@@ -155,6 +156,11 @@ exprt jimple_file::to_exprt(contextt &ctx) const
   // Add class/interface members
   auto total_size = 0;
 
+  // Add a inheritance tag:
+  struct_union_typet::componentt comp("tag-reference", "reference", signedbv_typet(32));
+  t.components().push_back(comp);
+  total_size += std::stoi(comp.type().width().as_string());
+
   // Here is where we add the inherited fields
   if(this->extends != "(No extends)")
   {
@@ -164,6 +170,8 @@ exprt jimple_file::to_exprt(contextt &ctx) const
     {
       for(auto &component : to_struct_type(symbol->type).components())
     {
+      if(component.name() == "tag-reference")
+        continue;
       t.components().push_back(component);
       total_size += std::stoi(component.type().width().as_string());
     }
@@ -189,7 +197,6 @@ exprt jimple_file::to_exprt(contextt &ctx) const
     }
   }
 
-
   // Finally, the structure is ready. Lets add it
   t.set("width", total_size);
   added_symbol->type = t;
@@ -199,7 +206,8 @@ exprt jimple_file::to_exprt(contextt &ctx) const
   {
     if(field && !std::dynamic_pointer_cast<jimple_class_field>(field))
     {
-      field->to_exprt(ctx, name, name);
+      auto method = field->to_exprt(ctx, name, name);
+      log_status("Added method {}", method.name());
     }
   }
   return e;

@@ -589,7 +589,7 @@ exprt jimple_static_member::to_exprt(
     return result;
   }
 
-  if(from == "Main" && field == "$assertionsDisabled")
+  if(field == "$assertionsDisabled")
   {
     result.make_false();
     return result;
