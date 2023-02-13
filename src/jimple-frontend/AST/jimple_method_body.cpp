@@ -148,6 +148,10 @@ void jimple_full_method_body::from_json(const json &stmts)
       to_add = std::make_shared<jimple_if>(s);
       break;
     }
+    case statement::Catch:
+    {
+      continue;
+    }
     default:
       log_error("Unknown type {}", stmt);
       abort();

@@ -547,3 +547,26 @@ exprt jimple_throw::to_exprt(
   p.move_to_operands(to_add);
   return p;
 }
+
+std::string jimple_catch::to_string() const
+{
+  std::ostringstream oss;
+  oss << "Catch: " << type;
+  return oss.str();
+}
+
+void jimple_catch::from_json(const json &j)
+{
+  j.at("class").get_to(type);
+}
+
+exprt jimple_catch::to_exprt(
+  contextt &ctx,
+  const std::string &class_name,
+  const std::string &function_name) const
+{
+  code_skipt skip;
+  return skip;
+}
+
+
