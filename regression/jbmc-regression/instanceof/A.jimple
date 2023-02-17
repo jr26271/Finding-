@@ -1,0 +1,18 @@
+class A extends java.lang.Object
+{
+/*Main.java*/
+
+/*10*/
+    void <init>()
+    {
+        A l0;
+
+        l0 := @this: A;
+
+        specialinvoke l0.<java.lang.Object: void <init>()>();
+/*11*/
+
+        return;
+/*11*/
+    }
+}

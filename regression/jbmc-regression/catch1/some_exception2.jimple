@@ -1,0 +1,18 @@
+class some_exception2 extends some_exception1
+{
+/*Main.java*/
+
+/*3*/
+    void <init>()
+    {
+        some_exception2 l0;
+
+        l0 := @this: some_exception2;
+
+        specialinvoke l0.<some_exception1: void <init>()>();
+/*4*/
+
+        return;
+/*4*/
+    }
+}

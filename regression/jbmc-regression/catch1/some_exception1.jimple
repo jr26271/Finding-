@@ -1,0 +1,18 @@
+class some_exception1 extends java.lang.Throwable
+{
+/*Main.java*/
+
+/*0*/
+    void <init>()
+    {
+        some_exception1 l0;
+
+        l0 := @this: some_exception1;
+
+        specialinvoke l0.<java.lang.Throwable: void <init>()>();
+/*1*/
+
+        return;
+/*1*/
+    }
+}

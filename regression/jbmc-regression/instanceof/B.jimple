@@ -1,0 +1,18 @@
+class B extends A
+{
+/*Main.java*/
+
+/*12*/
+    void <init>()
+    {
+        B l0;
+
+        l0 := @this: B;
+
+        specialinvoke l0.<A: void <init>()>();
+/*13*/
+
+        return;
+/*13*/
+    }
+}

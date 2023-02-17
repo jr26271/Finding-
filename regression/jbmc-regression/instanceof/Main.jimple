@@ -1,0 +1,123 @@
+class Main extends java.lang.Object
+{
+/*Main.java*/
+    static final boolean $assertionsDisabled;
+
+/*0*/
+    void <init>()
+    {
+        Main l0;
+
+        l0 := @this: Main;
+
+        specialinvoke l0.<java.lang.Object: void <init>()>();
+/*1*/
+
+        return;
+/*1*/
+    }
+
+/*2*/
+    public static void main(java.lang.String[])
+    {
+        A $stack3;
+        B $stack4;
+        boolean $stack5, $stack6, $stack7, $stack9;
+        java.lang.AssertionError $stack8, $stack10;
+        java.lang.String[] l0;
+
+        l0 := @parameter0: java.lang.String[];
+
+        $stack3 = new A;
+/*3*/
+
+        specialinvoke $stack3.<A: void <init>()>();
+/*3*/
+
+        $stack4 = new B;
+/*4*/
+
+        specialinvoke $stack4.<B: void <init>()>();
+/*4*/
+
+        $stack5 = <Main: boolean $assertionsDisabled>;
+/*5*/
+
+        if $stack5 != 0 goto label1;
+/*5*/
+
+        $stack9 = $stack3 instanceof B;
+/*5*/
+
+        if $stack9 == 0 goto label1;
+/*5*/
+
+        $stack10 = new java.lang.AssertionError;
+/*5*/
+
+        specialinvoke $stack10.<java.lang.AssertionError: void <init>()>();
+/*5*/
+
+        throw $stack10;
+/*5*/
+
+     label1:
+        $stack6 = <Main: boolean $assertionsDisabled>;
+/*6*/
+
+        if $stack6 != 0 goto label2;
+/*6*/
+
+        $stack7 = $stack4 instanceof B;
+/*6*/
+
+        if $stack7 != 0 goto label2;
+/*6*/
+
+        $stack8 = new java.lang.AssertionError;
+/*6*/
+
+        specialinvoke $stack8.<java.lang.AssertionError: void <init>()>();
+/*6*/
+
+        throw $stack8;
+/*6*/
+
+     label2:
+        return;
+/*7*/
+    }
+
+/*0*/
+    static void <clinit>()
+    {
+        java.lang.Class $stack0;
+        boolean $stack1, $stack2;
+
+        $stack0 = class "LMain;";
+/*1*/
+
+        $stack1 = virtualinvoke $stack0.<java.lang.Class: boolean desiredAssertionStatus()>();
+/*1*/
+
+        if $stack1 != 0 goto label1;
+/*1*/
+
+        $stack2 = 1;
+/*1*/
+
+        goto label2;
+/*1*/
+
+     label1:
+        $stack2 = 0;
+/*1*/
+
+     label2:
+        <Main: boolean $assertionsDisabled> = $stack2;
+/*1*/
+
+        return;
+/*1*/
+    }
+}

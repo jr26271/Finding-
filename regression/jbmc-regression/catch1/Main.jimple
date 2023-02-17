@@ -1,0 +1,131 @@
+class Main extends java.lang.Object
+{
+/*Main.java*/
+    static final boolean $assertionsDisabled;
+
+/*6*/
+    void <init>()
+    {
+        Main l0;
+
+        l0 := @this: Main;
+
+        specialinvoke l0.<java.lang.Object: void <init>()>();
+/*7*/
+
+        return;
+/*7*/
+    }
+
+/*8*/
+    public static void main(java.lang.String[])
+    {
+        boolean $stack3, $stack7, $stack8, $stack9;
+        java.lang.AssertionError $stack4, $stack11;
+        some_exception2 $stack5;
+        some_exception1 $stack6;
+        java.lang.String[] l0;
+
+        l0 := @parameter0: java.lang.String[];
+
+     label1:
+        $stack5 = new some_exception2;
+/*12*/
+
+        specialinvoke $stack5.<some_exception2: void <init>()>();
+/*12*/
+
+        throw $stack5;
+/*12*/
+
+     label2:
+        $stack6 := @caughtexception;
+/*12*/
+
+        $stack7 = <Main: boolean $assertionsDisabled>;
+/*15*/
+
+        if $stack7 != 0 goto label3;
+/*15*/
+
+        $stack9 = $stack6 instanceof some_exception2;
+/*15*/
+
+        if $stack9 != 0 goto label3;
+/*15*/
+
+        $stack11 = new java.lang.AssertionError;
+/*15*/
+
+        specialinvoke $stack11.<java.lang.AssertionError: void <init>()>();
+/*15*/
+
+        throw $stack11;
+/*15*/
+
+     label3:
+        $stack8 = $stack6 instanceof some_exception2;
+/*16*/
+
+        if $stack8 == 0 goto label4;
+/*16*/
+
+        return;
+/*16*/
+
+     label4:
+        $stack3 = <Main: boolean $assertionsDisabled>;
+/*18*/
+
+        if $stack3 != 0 goto label5;
+/*18*/
+
+        $stack4 = new java.lang.AssertionError;
+/*18*/
+
+        specialinvoke $stack4.<java.lang.AssertionError: void <init>()>();
+/*18*/
+
+        throw $stack4;
+/*18*/
+
+     label5:
+        return;
+/*19*/
+
+        catch some_exception1 from label1 to label2 with label2;
+    }
+
+/*6*/
+    static void <clinit>()
+    {
+        java.lang.Class $stack0;
+        boolean $stack1, $stack2;
+
+        $stack0 = class "LMain;";
+/*7*/
+
+        $stack1 = virtualinvoke $stack0.<java.lang.Class: boolean desiredAssertionStatus()>();
+/*7*/
+
+        if $stack1 != 0 goto label1;
+/*7*/
+
+        $stack2 = 1;
+/*7*/
+
+        goto label2;
+/*7*/
+
+     label1:
+        $stack2 = 0;
+/*7*/
+
+     label2:
+        <Main: boolean $assertionsDisabled> = $stack2;
+/*7*/
+
+        return;
+/*7*/
+    }
+}

@@ -1,0 +1,39 @@
+class Main extends java.lang.Object
+{
+/*Main.java*/
+
+/*12*/
+    void <init>()
+    {
+        Main l0;
+
+        l0 := @this: Main;
+
+        specialinvoke l0.<java.lang.Object: void <init>()>();
+/*13*/
+
+        return;
+/*13*/
+    }
+
+/*14*/
+    public static void main(java.lang.String[])
+    {
+        B $stack2;
+        java.lang.String[] l0;
+
+        l0 := @parameter0: java.lang.String[];
+
+        $stack2 = new B;
+/*15*/
+
+        specialinvoke $stack2.<B: void <init>()>();
+/*15*/
+
+        virtualinvoke $stack2.<A: void f()>();
+/*16*/
+
+        return;
+/*17*/
+    }
+}

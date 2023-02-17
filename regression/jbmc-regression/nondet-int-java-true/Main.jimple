@@ -1,0 +1,92 @@
+public class Main extends java.lang.Object
+{
+/*Main.java*/
+    static final boolean $assertionsDisabled;
+
+/*2*/
+    public void <init>()
+    {
+        Main l0;
+
+        l0 := @this: Main;
+
+        specialinvoke l0.<java.lang.Object: void <init>()>();
+/*3*/
+
+        return;
+/*3*/
+    }
+
+/*5*/
+    public static void main(java.lang.String[])
+    {
+        int l1;
+        boolean $stack3;
+        java.lang.AssertionError $stack4;
+        java.lang.String[] l0;
+
+        l0 := @parameter0: java.lang.String[];
+
+        l1 = staticinvoke <org.sosy_lab.sv_benchmarks.Verifier: int nondetInt()>();
+/*6*/
+/*6*/
+
+        if l1 <= 60 goto label1;
+/*7*/
+
+        $stack3 = <Main: boolean $assertionsDisabled>;
+/*8*/
+
+        if $stack3 != 0 goto label1;
+/*8*/
+
+        if l1 > 42 goto label1;
+/*8*/
+
+        $stack4 = new java.lang.AssertionError;
+/*8*/
+
+        specialinvoke $stack4.<java.lang.AssertionError: void <init>()>();
+/*8*/
+
+        throw $stack4;
+/*8*/
+
+     label1:
+        return;
+/*9*/
+    }
+
+/*2*/
+    static void <clinit>()
+    {
+        java.lang.Class $stack0;
+        boolean $stack1, $stack2;
+
+        $stack0 = class "LMain;";
+/*3*/
+
+        $stack1 = virtualinvoke $stack0.<java.lang.Class: boolean desiredAssertionStatus()>();
+/*3*/
+
+        if $stack1 != 0 goto label1;
+/*3*/
+
+        $stack2 = 1;
+/*3*/
+
+        goto label2;
+/*3*/
+
+     label1:
+        $stack2 = 0;
+/*3*/
+
+     label2:
+        <Main: boolean $assertionsDisabled> = $stack2;
+/*3*/
+
+        return;
+/*3*/
+    }
+}

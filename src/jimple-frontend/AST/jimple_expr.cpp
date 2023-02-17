@@ -33,13 +33,17 @@ exprt jimple_symbol::to_exprt(
 {
   // 1. Look over the local scope
   auto symbol_name = get_symbol_name(class_name, function_name, var_name);
-  symbolt &s = *ctx.find_symbol(symbol_name);
-
+  symbolt *s = ctx.find_symbol(symbol_name);
+  if(!s)
+  {
+    log_error("Could not find symbol {}", symbol_name);
+    throw 0;
+  }
   // TODO:
   // 2. Look over the class scope
   // 3. Look over the global scope (possibly don't need)
 
-  return symbol_expr(s);
+  return symbol_expr(*s);
 };
 
 std::shared_ptr<jimple_expr> jimple_expr::get_expression(const json &j)
@@ -198,6 +202,12 @@ exprt jimple_binop::to_exprt(
     return if_exprt(equal, zero, inner_if);
   }
 #endif
+  if(binop == "InstanceOf")
+  {
+    c_typecastt c_typecast(ctx);
+    c_typecast.implicit_typecast(rhs_expr, lhs_expr.type());
+    assert(lhs_expr.type() == rhs_expr.type());
+  }
   return gen_binary(
     binop,
     lhs_expr.type(),
