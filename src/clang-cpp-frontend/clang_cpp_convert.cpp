@@ -1,7 +1,7 @@
+#include <util/compiler_defs.h>
 // Remove warnings from Clang headers
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
+CC_DIAGNOSTIC_PUSH()
+CC_DIAGNOSTIC_IGNORE_LLVM_CHECKS()
 #include <clang/AST/Attr.h>
 #include <clang/AST/DeclCXX.h>
 #include <clang/AST/DeclFriend.h>
@@ -14,7 +14,7 @@
 #include <clang/Frontend/ASTUnit.h>
 #include <clang/AST/ParentMapContext.h>
 #include <llvm/Support/raw_os_ostream.h>
-#pragma GCC diagnostic pop
+CC_DIAGNOSTIC_POP()
 
 #include <clang-cpp-frontend/clang_cpp_convert.h>
 #include <util/expr_util.h>
@@ -586,9 +586,6 @@ bool clang_cpp_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
 
     if(ne.hasInitializer())
     {
-      exprt lhs("new_object", t);
-      lhs.cmt_lvalue(true);
-
       exprt init;
       if(get_expr(*ne.getInitializer(), init))
         return true;
@@ -663,19 +660,6 @@ bool clang_cpp_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
     const clang::CXXConstructExpr &cxxc =
       static_cast<const clang::CXXConstructExpr &>(stmt);
 
-    // Avoid materializing a temporary for an elidable copy/move constructor.
-    if(cxxc.isElidable() && !cxxc.requiresZeroInitialization())
-    {
-      const clang::MaterializeTemporaryExpr *mt =
-        llvm::dyn_cast<clang::MaterializeTemporaryExpr>(cxxc.getArg(0));
-
-      if(mt != nullptr)
-      {
-        log_error("elidable copy/move is not supported in {}", __func__);
-        abort();
-      }
-    }
-
     if(get_constructor_call(cxxc, new_expr))
       return true;
 
@@ -709,6 +693,26 @@ bool clang_cpp_convertert::get_expr(const clang::Stmt &stmt, exprt &new_expr)
     break;
   }
 
+  case clang::Stmt::CXXTemporaryObjectExprClass:
+  {
+    const clang::CXXTemporaryObjectExpr &cxxtoe =
+      static_cast<const clang::CXXTemporaryObjectExpr &>(stmt);
+
+    // get the constructor call making this temporary
+    if(get_constructor_call(cxxtoe, new_expr))
+      return true;
+
+    // make the temporary
+    side_effect_exprt tmp_obj("temporary_object", new_expr.type());
+    codet code_expr("expression");
+    code_expr.operands().push_back(new_expr);
+    tmp_obj.initializer(code_expr);
+    tmp_obj.location() = new_expr.location();
+    new_expr.swap(tmp_obj);
+
+    break;
+  }
+
   default:
     return clang_c_convertert::get_expr(stmt, new_expr);
   }
@@ -737,9 +741,14 @@ bool clang_cpp_convertert::get_constructor_call(
 
   // Try to get the object that this constructor is constructing
   auto it = ASTContext->getParents(constructor_call).begin();
-
   const clang::Decl *objectDecl = it->get<clang::Decl>();
-  if(!objectDecl)
+
+  /*
+   * We only need to build the new_object if:
+   *  1. we are dealing with new operator
+   *  2. we are binding a temporary
+   */
+  if(!objectDecl && need_new_object(it->get<clang::Stmt>()))
   {
     address_of_exprt tmp_expr;
     tmp_expr.type() = pointer_typet();
@@ -1222,4 +1231,30 @@ void clang_cpp_convertert::gen_typecast_base_ctor_call(
   // generate the type casting expr and push it to callee's arguments
   gen_typecast(ns, implicit_this_symb, base_ctor_this_type);
   call.arguments().push_back(implicit_this_symb);
+}
+
+bool clang_cpp_convertert::need_new_object(const clang::Stmt *parentStmt)
+{
+  /*
+   * Example:
+   * Distinguish `Foo foo = new foo();` from `Foo foo = foo();`
+   * This function will return true for the former.
+   * The latter involves a temporary object and copy constructor call
+   * where the the temporary object construction is considered an argument to
+   * the cpy ctor call's AST node, in which case this function will return false,
+   * indicating we shouldn't make a new_object.
+   */
+  if(parentStmt)
+  {
+    switch(parentStmt->getStmtClass())
+    {
+    case clang::Stmt::CXXNewExprClass:
+    case clang::Stmt::CXXBindTemporaryExprClass:
+      return true;
+    default:
+      return false;
+    }
+  }
+
+  return false;
 }

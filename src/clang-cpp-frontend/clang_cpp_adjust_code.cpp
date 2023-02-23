@@ -167,12 +167,15 @@ void clang_cpp_adjust::adjust_decl_block(codet &code)
         code_declt object(code_decl.lhs());
         new_block.copy_to_operands(object);
 
-        // Get rhs
+        // Get rhs - this represents the constructor call
         side_effect_expr_function_callt &init =
           to_side_effect_expr_function_call(rhs);
 
-        // Get lhs
-        init.arguments().push_back(address_of_exprt(code_decl.lhs()));
+        // Get lhs - this represents the `this` pointer
+        exprt::operandst &rhs_args = init.arguments();
+        // the original lhs needs to be the first arg, then followed by others:
+        //  BLAH(&bleh, arg1, arg2, ...);
+        rhs_args.insert(rhs_args.begin(), address_of_exprt(code_decl.lhs()));
 
         // Now convert the side_effect into an expression
         convert_expression_to_code(init);

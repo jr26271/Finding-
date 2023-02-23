@@ -23,7 +23,7 @@ if(BENCHBRINGUP)
 endif()
 
 function(add_esbmc_regression_test folder modes test)
-    set(test_name "regression/${folder}/${test}")
+    set(test_name "regression-${folder}-${test}")
     add_test(NAME ${test_name}
              COMMAND ${Python_EXECUTABLE} ${ESBMC_REGRESSION_TOOL}
                      --tool=${ESBMC_BIN}
@@ -76,6 +76,7 @@ else()
                     k-induction esbmc-cpp/cpp esbmc-cpp/cbmc csmith
                     k-induction-parallel nonz3 ${REGRESSIONS_BITWUZLA}
                     incremental-smt esbmc-cpp11/cpp esbmc-cpp11/constructors esbmc-cpp11/new-delete esbmc-cpp11/reference esbmc-cpp/inheritance_bringup
+                    esbmc-cpp/bug_fixes
                     ${REGRESSIONS_GOTO_CONTRACTOR} ${REGRESSIONS_JIMPLE} extensions)
   else()
     set(REGRESSIONS $ENV{BENCHMARK_TO_RUN}) # run a single user-specified benchmark

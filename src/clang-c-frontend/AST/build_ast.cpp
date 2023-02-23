@@ -1,7 +1,7 @@
+#include <util/compiler_defs.h>
 // Remove warnings from Clang headers
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
+CC_DIAGNOSTIC_PUSH()
+CC_DIAGNOSTIC_IGNORE_LLVM_CHECKS()
 #include <clang/Basic/Version.inc>
 #include <clang/Driver/Compilation.h>
 #include <clang/Driver/Driver.h>
@@ -16,7 +16,7 @@
 #include <llvm/Option/ArgList.h>
 #include <llvm/Support/Host.h>
 #include <llvm/Support/Path.h>
-#pragma GCC diagnostic pop
+CC_DIAGNOSTIC_POP()
 
 #include <clang-c-frontend/AST/build_ast.h>
 #include <clang-c-frontend/AST/esbmc_action.h>
@@ -28,9 +28,9 @@ static clang::driver::Driver *newDriver(
   llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> VFS)
 {
   clang::driver::Driver *CompilerDriver;
-/* Clang's API changed between version 11 and 12 in that it now requires a name
+/* Clang's API changed between version 11 and 13 in that it now requires a name
  * to construct a Driver. */
-#if CLANG_VERSION_MAJOR >= 12
+#if CLANG_VERSION_MAJOR >= 13
   CompilerDriver = new clang::driver::Driver(
     BinaryName,
     llvm::sys::getDefaultTargetTriple(),
