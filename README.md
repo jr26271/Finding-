@@ -84,7 +84,7 @@ A number of SMT solvers are currently supported:
  * Bitwuzla
  * Boolector 3.0+
  * MathSAT
- * CVC4
+ * CVC5
  * Yices 2.2+
 
 In addition, ESBMC can be configured to use the SMTLIB interactive text format with a pipe, to communicate with an arbitary solver process, although not-insignificant overheads are involved.

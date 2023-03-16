@@ -179,7 +179,7 @@ const struct group_opt_templ all_cmd_options[] = {
     {"boolector", NULL, "use Boolector (default),"},
     {"z3", NULL, "use Z3"},
     {"mathsat", NULL, "use MathSAT"},
-    {"cvc", NULL, "use CVC4"},
+    {"cvc", NULL, "use CVC5"},
     {"yices", NULL, "use Yices"},
     {"bitwuzla", NULL, "use Bitwuzla"},
     {"bv", NULL, "use solver with bit-vector arithmetic"},
