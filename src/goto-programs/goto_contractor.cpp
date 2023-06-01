@@ -1,8 +1,8 @@
 #include <goto-programs/goto_contractor.h>
 
-void goto_contractor(goto_functionst &goto_functions)
+void goto_contractor(goto_functionst &goto_functions, const namespacet &ns)
 {
-  goto_contractort gotoContractort(goto_functions);
+  goto_contractort gotoContractort(goto_functions, ns);
 
   goto_functions.update();
 }
@@ -10,11 +10,15 @@ void goto_contractor(goto_functionst &goto_functions)
 void goto_contractort::get_contractors(goto_functionst goto_functions)
 {
   auto function = goto_functions.function_map.find("c:@F@main");
+  my_targets.clear();
   for(const auto &ins : function->second.body.instructions)
   {
     if(ins.is_assert())
+    {
       contractors.add_contractor(
         create_contractor_from_expr2t(ins.guard), ins.location_number);
+      my_targets.push_front(ins);
+    }
     else if(
       ins.is_function_call() &&
       is_symbol2t(to_code_function_call2t(ins.code).function) &&
@@ -27,13 +31,52 @@ void goto_contractort::get_contractors(goto_functionst goto_functions)
   }
 }
 
-void goto_contractort::get_intervals(goto_functionst goto_functions)
+void goto_contractort::get_intervals(
+  goto_functionst goto_functions,
+  const namespacet &ns)
 {
-  auto function = goto_functions.function_map.find("c:@F@main");
+  ait<interval_domaint> interval_analysis;
 
-  for(const auto &ins : function->second.body.instructions)
-    if(ins.is_assume())
-      parse_intervals(ins.guard);
+  interval_analysis(goto_functions, ns);
+
+  std::ostringstream oss;
+  interval_analysis.output(goto_functions, oss);
+  log_debug("q[interval-analysis: {}", oss.str());
+
+  std::ostringstream oss2;
+
+  //Forall_goto_functions(f_it, goto_functions)
+  auto f_it = goto_functions.function_map.find("c:@F@main");
+  {
+    Forall_goto_program_instructions(i_it, f_it->second.body)
+    {
+      //if(i_it->is_assert())
+      {
+        auto it = map.var_map.begin();
+        while(it != map.var_map.end())
+        {
+          auto var_name = it->second.getSymbol()->get_symbol_name();
+          auto new_interval = interval_analysis[i_it].get_int_map()[var_name];
+          if(!new_interval.is_top())
+          {
+            auto lb = new_interval.get_lower().to_int64();
+            auto ub = new_interval.get_upper().to_int64();
+            auto i = it->second.getInterval();
+
+            std::cout <<"at location: "<< i_it->location_number <<" Var: " << var_name <<" this out " << i << " should be: " << new_interval <<std::endl;
+
+            if(new_interval.lower_set && (isinf(i.lb()) || i.lb() > lb))
+              map.update_lb_interval(lb, var_name);
+            if(new_interval.upper_set && (isinf(i.ub()) || i.ub() < ub))
+              map.update_ub_interval(ub, var_name);
+          }
+          it++;
+        }
+      }
+    }
+  }
+  // instrument_intervals(interval_analysis, f_it->second);
+  goto_functions.update();
 }
 
 void goto_contractort::parse_intervals(expr2tc expr)
@@ -448,4 +491,7 @@ void vart::setIntervalChanged(bool intervalChanged)
 const symbol2tc &vart::getSymbol() const
 {
   return symbol;
+}
+vart::vart()
+{
 }

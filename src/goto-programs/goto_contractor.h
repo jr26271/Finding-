@@ -18,8 +18,11 @@
 #include <ibex/ibex_Ctc.h>
 #include <irep2/irep2.h>
 #include <util/type_byte_size.h>
+#include <goto-programs/abstract-interpretation/interval_domain.h>
+#include <goto-programs/abstract-interpretation/interval_analysis.h>
+//#include <goto-programs/abstract-interpretation/interval_analysis.cpp>
 
-void goto_contractor(goto_functionst &goto_functions);
+void goto_contractor(goto_functionst &goto_functions, const namespacet& namespacet);
 
 class vart
 {
@@ -32,6 +35,8 @@ private:
 
 public:
   size_t getIndex() const;
+
+  vart();
 
 public:
   vart(const string &varName, const symbol2tc &symbol, const size_t &index);
@@ -337,7 +342,7 @@ public:
    * Fourth, inserting assumes in the program to reflect the contracted intervals.
    * @param _goto_functions
    */
-  goto_contractort(goto_functionst &_goto_functions)
+  goto_contractort(goto_functionst &_goto_functions, const namespacet& ns)
     : goto_functions_algorithm(true), goto_functions(_goto_functions)
   {
     initialize_main_function_loops();
@@ -355,7 +360,7 @@ public:
       }
       contractors.dump();
       log_debug("2/4 - Parsing assumes to set values for variables intervals.");
-      get_intervals(_goto_functions);
+      get_intervals(_goto_functions, ns);
 
       log_debug("3/4 - Applying contractor.");
       apply_contractor();
@@ -381,8 +386,10 @@ private:
 
   typedef std::list<loopst> function_loopst;
   function_loopst function_loops;
+  //namespacet& ns;
+  goto_programt::instructionst my_targets;
 
-  /// \Function get_contractors is a function that will go through each asert
+  /// \Function get_contractors is a function that will go through each assert
   /// in the program and parse it from ESBMC expression to an IBEX expression
   /// that will be added create two contractors with the constraints.
   /// One is for the outer contractor with the constraint of the assert
@@ -399,7 +406,7 @@ private:
   /// return nothing. However the values of the intervals of each variable will
   /// be updated in the Map that holds the variable information.
   /// \param functionst list of functions in the goto program
-  void get_intervals(goto_functionst functionst);
+  void get_intervals(goto_functionst functionst, const namespacet &namespacet);
 
   /// \Function contractor function will apply the contractor on the parsed
   /// constraint and intervals. it will apply the inner contractor by
