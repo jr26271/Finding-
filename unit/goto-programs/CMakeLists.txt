@@ -6,3 +6,4 @@ else()
     message(WARNING "For some reason Interval Analysis tests are failing on windows")
 endif()
 
+new_unit_test(warren-test "warren_algorithms.test.cpp" "")
