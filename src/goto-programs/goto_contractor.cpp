@@ -1,8 +1,8 @@
 #include <goto-programs/goto_contractor.h>
 
-void goto_contractor(goto_functionst &goto_functions, const namespacet &ns)
+void goto_contractor(goto_functionst &goto_functions, const namespacet &ns, optionst options)
 {
-  goto_contractort gotoContractort(goto_functions, ns);
+    goto_contractort gotoContractort(goto_functions, ns, options);
 
   goto_functions.update();
 }
@@ -453,6 +453,55 @@ bool goto_contractort::initialize_main_function_loops()
   }
   goto_functions.update();
   return true;
+}
+
+void goto_contractort::run_algorithm_2(goto_functionst &functionst, const namespacet &ns) {
+
+  ait<interval_domaint> interval_analysis;
+
+  interval_analysis(goto_functions, ns);
+  Forall_goto_functions(f_it, goto_functions)
+  {
+    Forall_goto_program_instructions(i_it, f_it->second.body)
+    {
+      if(i_it->is_assert())
+      {
+        //convert map to ibex
+        //first create the contractor to populate cspmap with the variables.
+        Contractor contractor(create_contractor_from_expr2t(i_it->guard),0);
+        //get intervals and convert them to ibex intervals by updating the map
+        auto interval_map = interval_analysis[i_it].get_int_map();
+        auto it = interval_map.begin();
+        while(it != interval_map.end())
+        {
+          if(it->second.lower_set)
+            map.update_lb_interval(it->second.get_lower().to_int64(), it->first.as_string());
+          if(it->second.upper_set)
+            map.update_ub_interval(it->second.get_upper().to_int64(), it->first.as_string());
+          it->second.dump();
+          it++;
+        }
+        auto out = contractor.get_outer();
+        auto in = contractor.get_inner();
+        //std::cout << out << in << std::endl;
+        auto X = map.create_interval_vector();
+        in->contract(X);
+        map.update_intervals(X);
+        auto v_it = map.var_map.begin();
+        while(v_it != map.var_map.end())
+        {
+          std::cout << v_it->first.c_str() << std::endl;
+          BigInt lb = llrintf64x(v_it->second.getInterval().lb());
+          BigInt ub = llrintf64x(v_it->second.getInterval().ub());
+          std::cout<< lb << ", " << ub<<std::endl;
+          interval_map[v_it->first.c_str()].set_lower(llrintf64x(v_it->second.getInterval().lb()));
+          interval_map[v_it->first.c_str()].set_upper(llrintf64x(v_it->second.getInterval().ub()));
+          interval_map[v_it->first.c_str()].dump();
+          v_it++;
+        }
+      }
+    }
+  }
 }
 
 const ibex::Interval &vart::getInterval() const

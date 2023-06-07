@@ -22,7 +22,7 @@
 #include <goto-programs/abstract-interpretation/interval_analysis.h>
 //#include <goto-programs/abstract-interpretation/interval_analysis.cpp>
 
-void goto_contractor(goto_functionst &goto_functions, const namespacet& namespacet);
+void goto_contractor(goto_functionst &goto_functions, const namespacet& namespacet, optionst options);
 
 class vart
 {
@@ -333,7 +333,9 @@ public:
 class goto_contractort : public goto_functions_algorithm
 {
 public:
-  /**
+    void run_algorithm_2(goto_functionst &functionst, const namespacet &namespacet);
+
+/**
    * This constructor will run the goto-contractor procedure.
    * it will go through 4 steps.
    * First is parsing the properties.
@@ -342,31 +344,37 @@ public:
    * Fourth, inserting assumes in the program to reflect the contracted intervals.
    * @param _goto_functions
    */
-  goto_contractort(goto_functionst &_goto_functions, const namespacet& ns)
+  goto_contractort(goto_functionst &_goto_functions, const namespacet &ns, optionst options)
     : goto_functions_algorithm(true), goto_functions(_goto_functions)
   {
-    initialize_main_function_loops();
-    if(!function_loops.empty())
+    if(options.get_bool_option("goto-contractor-algo2"))
     {
       vars = new ibex::Variable(CspMap::MAX_VAR);
-      log_debug("1/4 - Parsing asserts to create CSP Constraints.");
-      get_contractors(_goto_functions);
-      if(contractors.is_empty())
-      {
-        log_status(
-          "Contractors: expression not supported, No Contractors were "
-          "created.");
-        return;
+        std::cout << "******************************goto-contractor-algo2: "<<std::endl;
+      run_algorithm_2(goto_functions, ns);
+    }
+    else {
+      initialize_main_function_loops();
+      if (!function_loops.empty()) {
+        vars = new ibex::Variable(CspMap::MAX_VAR);
+        log_debug("1/4 - Parsing asserts to create CSP Constraints.");
+        get_contractors(_goto_functions);
+        if (contractors.is_empty()) {
+          log_status(
+                  "Contractors: expression not supported, No Contractors were "
+                  "created.");
+          return;
+        }
+        contractors.dump();
+        log_debug("2/4 - Parsing assumes to set values for variables intervals.");
+        get_intervals(_goto_functions, ns);
+
+        log_debug("3/4 - Applying contractor.");
+        apply_contractor();
+
+        log_debug("4/4 - Inserting assumes.");
+        insert_assume(_goto_functions);
       }
-      contractors.dump();
-      log_debug("2/4 - Parsing assumes to set values for variables intervals.");
-      get_intervals(_goto_functions, ns);
-
-      log_debug("3/4 - Applying contractor.");
-      apply_contractor();
-
-      log_debug("4/4 - Inserting assumes.");
-      insert_assume(_goto_functions);
     }
   }
 
